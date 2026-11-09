@@ -1,106 +1,81 @@
-﻿from pathlib import Path
-import matplotlib.pyplot as plt
-import numpy as np
+"""
+02_xrd.py - Automated XRD Pattern Analysis, Scherrer Sizing, and LabPlot ASCII Export Engine
+"""
+
+import sys
+from pathlib import Path
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 import pandas as pd
-from scipy.signal import find_peaks
-from scipy.optimize import curve_fit
+import matplotlib.pyplot as plt
 
-BASE_DIR = Path(r"D:\Plotting_Chemistry")
+from modules.export_utils import save_publication_figure, export_labplot_ascii
+from modules.xrd_module import process_and_plot_xrd, generate_benchmark_xrd_data
 DATA_FILE = BASE_DIR / "data" / "xrd" / "xrd_data.csv"
-OUTPUT_FILE = BASE_DIR / "output" / "XRD_Stacked_Publication.png"
+OUTPUT_DIR = BASE_DIR / "output" / "xrd"
+ROOT_OUTPUT_FILE = BASE_DIR / "output" / "XRD_Stacked_Publication.png"
 
-plt.rcParams.update({
-    'font.family': 'sans-serif',
-    'font.sans-serif': ['Arial', 'Helvetica', 'DejaVu Sans'],
-    'font.size': 13,
-    'axes.linewidth': 1.6,
-    'xtick.direction': 'in',
-    'ytick.direction': 'in',
-    'xtick.major.size': 7,
-    'xtick.major.width': 1.5,
-    'xtick.minor.size': 4,
-    'xtick.minor.width': 1.0,
-    'ytick.major.size': 7,
-    'ytick.major.width': 1.5,
-})
-
-def lorentzian(x, x0, gamma, a, c):
-    return a * (gamma**2 / ((x - x0)**2 + gamma**2)) + c
-
-def scherrer_size(fwhm_deg, two_theta_deg, wavelength_nm=0.15406, k=0.9):
-    theta_rad = np.radians(two_theta_deg / 2.0)
-    beta_rad = np.radians(fwhm_deg)
-    d_nm = (k * wavelength_nm) / (beta_rad * np.cos(theta_rad))
-    return d_nm
-
-def load_or_generate_data():
-    if DATA_FILE.exists():
-        df = pd.read_csv(DATA_FILE)
-        two_theta = df.iloc[:, 0].to_numpy()
-        patterns = {col: df[col].to_numpy() for col in df.columns[1:]}
-    else:
-        print("[INFO] No CSV found in data/xrd. Generating benchmark XRD spectra...")
-        two_theta = np.linspace(10, 80, 2000)
-        # Synthetic polymer and nanoparticle diffraction peaks
-        def make_xrd(noise_level, peak_widths):
-            y = np.random.normal(50, noise_level, len(two_theta))
-            peaks = [(17.0, peak_widths[0], 250), (25.5, peak_widths[1], 150), (43.2, 0.4, 400), (50.4, 0.45, 300), (74.1, 0.5, 180)]
-            for pos, fwhm, intensity in peaks:
-                gamma = fwhm / 2.0
-                y += intensity * (gamma**2 / ((two_theta - pos)**2 + gamma**2))
-            return y
-        patterns = {
-            'Pristine': make_xrd(2.0, [2.5, 3.0]),
-            'P-NPs #1': make_xrd(2.5, [2.2, 2.8]),
-            'P-NPs #2': make_xrd(3.0, [2.0, 2.5])
-        }
-    return two_theta, patterns
 
 def main():
-    two_theta, patterns = load_or_generate_data()
-    fig, ax = plt.subplots(figsize=(8.0, 6.0), dpi=300)
+    print("=" * 70)
+    print(" [2/5] Running XRD Crystallography Protocol")
+    print("=" * 70)
+    
+    if DATA_FILE.exists():
+        print(f"[INFO] Loading experimental data from: {DATA_FILE}")
+        df = pd.read_csv(DATA_FILE)
+    else:
+        print("[WARN] Data file missing. Generating benchmark XRD patterns...")
+        df = generate_benchmark_xrd_data()
+        DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(DATA_FILE, index=False)
 
-    offset_step = 500.0
-    current_offset = 0.0
-    colors = ['#1f77b4', '#d62728', '#2ca02c']
+    fig, ax, fit_results, labplot_df = process_and_plot_xrd(
+        df,
+        offset_step=500.0,
+        fit_range=(41.5, 45.0),
+        wavelength_nm=0.15406,
+        k_factor=0.9
+    )
 
-    for idx, (name, intensity) in enumerate(patterns.items()):
-        y_shifted = intensity + current_offset
-        c = colors[idx % len(colors)]
-        ax.plot(two_theta, y_shifted, label=name, color='black', lw=1.5)
+    print("\n[ANALYSIS] Scherrer Crystallite Size Deconvolution:")
+    for sample, stats in fit_results.items():
+        if 'Error' in stats:
+            print(f"  * {sample}: {stats['Error']}")
+        else:
+            print(f"  * {sample}: 2-Theta = {stats['Peak_2Theta_deg']} deg, FWHM = {stats['FWHM_deg']} deg, D = {stats['Crystallite_Size_nm']} nm")
+
+    # Export publication graphics (600 DPI PNG, SVG, PDF)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_base = OUTPUT_DIR / "XRD_Stacked_Publication"
+    save_publication_figure(fig, out_base, dpi=600, formats=('png', 'svg', 'pdf'))
+    
+    # Root backward compatibility
+    fig.savefig(ROOT_OUTPUT_FILE, dpi=600, bbox_inches='tight')
+    print(f"[EXPORT] Backward-compatible root image: {ROOT_OUTPUT_FILE}")
+
+    # Export LabPlot ASCII matrix
+    ascii_out = OUTPUT_DIR / "XRD_Stacked_Matrix.dat"
+    units = {'TwoTheta_deg': 'degrees'}
+    for col in labplot_df.columns[1:]:
+        units[col] = 'Counts'
         
-        # Calculate crystallite size on primary crystalline peak around 43.2 deg
-        mask = (two_theta >= 41.5) & (two_theta <= 45.0)
-        x_sub = two_theta[mask]
-        y_sub = intensity[mask]
-        try:
-            p0 = [43.2, 0.3, np.max(y_sub) - np.min(y_sub), np.min(y_sub)]
-            popt, _ = curve_fit(lorentzian, x_sub, y_sub, p0=p0, maxfev=5000)
-            fwhm = 2 * popt[1]
-            d_crystallite = scherrer_size(fwhm, popt[0])
-            ax.text(two_theta[-1] - 1, y_shifted[-1] + 40, f"{name} (D ≈ {d_crystallite:.1f} nm)", 
-                    ha='right', va='bottom', fontsize=11, fontweight='bold')
-        except Exception:
-            ax.text(two_theta[-1] - 1, y_shifted[-1] + 40, name, ha='right', va='bottom', fontsize=11, fontweight='bold')
+    export_labplot_ascii(
+        labplot_df,
+        filepath=ascii_out,
+        title="XRD Diffraction Stacked Patterns with Scherrer Analysis",
+        units=units,
+        comments=["Cu K-alpha radiation (lambda = 0.15406 nm)", "K = 0.9 shape factor"]
+    )
 
-        current_offset += offset_step
-
-    ax.set_xlim(10, 80)
-    ax.set_xlabel(r'$\mathbf{2\theta\ (degrees)}$', fontsize=14, labelpad=8)
-    ax.set_ylabel(r'$\mathbf{Intensity\ (a.u.)}$', fontsize=14, labelpad=10)
-    ax.set_yticks([])
-    ax.minorticks_on()
-    ax.tick_params(axis='x', which='both', top=True, direction='in')
-    ax.tick_params(axis='y', which='both', left=True, right=True, direction='in')
-
-    for spine in ax.spines.values():
-        spine.set_linewidth(1.6)
-
-    plt.tight_layout()
-    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUTPUT_FILE, dpi=600, bbox_inches='tight')
-    print(f'[SUCCESS] Saved: {OUTPUT_FILE}')
     plt.close(fig)
+    print("\n[COMPLETED] XRD analysis finished successfully.\n")
+
 
 if __name__ == '__main__':
     main()
