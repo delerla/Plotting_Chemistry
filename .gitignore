@@ -1,0 +1,19 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+venv/
+*.env
+
+# Large raw analytical binaries (store on local drive, exclude from git repo)
+*.raw
+*.spc
+*.dm3
+*.tif
+*.tiff
+*.bcf
+*.msa
+
+# Generated plots
+output/*.png
+output/*.tiff
+output/*.pdf
