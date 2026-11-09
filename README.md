@@ -2,7 +2,47 @@
 
 An open-source, local-first scientific analysis and visualization engine designed to replace proprietary suites (e.g., OriginLab) with Python 3.12, SciPy, lmfit, OpenCV, Matplotlib, and Streamlit.
 
-Equipped with **Universal Multi-Format Ingestion** (Excel, OriginLab exports, CSV, TSV, DAT, TXT, ASC, DPT, PRN, XY, and Micrographs) and **Physics-Based Technique Auto-Detection & Header Cleaning**.
+Equipped with **Universal Multi-Format Ingestion** (Excel, OriginLab exports, CSV, TSV, DAT, TXT, ASC, DPT, PRN, XY, and Micrographs), **Physics-Based Technique Auto-Detection & Header Cleaning**, and **Zero-Setup Portability**.
+
+---
+
+## ⚡ 1-Click Portability: Copy-Paste to Any Computer
+
+The entire repository uses **relative paths** and isolated environment scripts. You can copy-paste the entire `Plotting_Chemistry` folder to any drive (`C:`, `D:`, USB drive, etc.) or computer (Windows 10/11, PowerShell 5.1/7):
+
+| 1-Click Launcher | Description |
+|---|---|
+| **`run_gui.bat`** | **Double-click to start.** Auto-checks dependencies, activates `.venv` (or creates/installs if missing), and opens the interactive GUI in your browser. |
+| **`setup_environment.bat`** | Optional: sets up an isolated Python virtual environment (`.venv`) and installs all scientific packages cleanly. |
+| **`run_all_scripts.bat`** | Double-click to execute all 5 analytical modules headlessly and generate all publication graphics and LabPlot matrices. |
+| **`sync_github.bat`** / **`.ps1`** | Synchronize local modifications with your GitHub repository in 1 click. |
+
+---
+
+## 🔄 Synchronizing with GitHub
+
+You can connect and push this repository to GitHub at any time:
+
+### Quick Method (Automated Assistant)
+1. Double-click **`sync_github.bat`** (or run `.\sync_github.ps1` in PowerShell).
+2. If running for the first time, paste your GitHub repository URL (e.g., `https://github.com/username/Plotting_Chemistry.git`).
+3. The script automatically stages changes, commits with timestamped metadata, and syncs to `main`.
+
+### Manual Git Commands
+```powershell
+# 1. Link your remote repository (first time only)
+git remote add origin https://github.com/<your-username>/Plotting_Chemistry.git
+git branch -M main
+
+# 2. Stage and commit
+git add -A
+git commit -m "Update materials characterization models and data"
+
+# 3. Push to GitHub
+git push -u origin main
+```
+
+> **Note on `.gitignore`:** The repository is configured to exclude large raw analytical binary dumps (`.raw`, `.spc`, `.dm3`, `.bcf`) and heavy generated outputs (`*.png`, `*.pdf`, `*.svg`, `*.dat`), while keeping the output folder structure intact via `.gitkeep`.
 
 ---
 
@@ -49,8 +89,13 @@ The hub features an intelligent pre-processing engine (`modules/file_parser.py`)
 ## 📁 Repository Structure
 
 ```text
-D:\Plotting_Chemistry\
-├── app.py                     # Streamlit Interactive Desktop GUI Hub with Smart Ingestion
+Plotting_Chemistry/
+├── run_gui.bat                # 1-Click desktop launcher (auto-installs if needed)
+├── run_all_scripts.bat        # 1-Click batch processor for all scripts
+├── setup_environment.bat      # 1-Click isolated venv setup
+├── sync_github.bat            # 1-Click GitHub sync assistant (Windows Batch)
+├── sync_github.ps1            # 1-Click GitHub sync assistant (PowerShell)
+├── app.py                     # Streamlit Interactive Desktop GUI Hub
 ├── requirements.txt           # Python dependency specification
 ├── README.md                  # System overview and protocol documentation
 ├── docs\
@@ -82,34 +127,6 @@ D:\Plotting_Chemistry\
     ├── uv_vis\
     ├── xps\
     └── sem_edx\
-```
-
----
-
-## 🚀 Quickstart & Usage
-
-### 1. Launch Interactive Desktop GUI
-```powershell
-streamlit run app.py
-```
-Open `http://localhost:8501`. 
-- **Global Dropzone:** Drag and drop any Excel file, Origin export, or instrument ASCII file in the sidebar. The system will inspect the headers, clean the table, classify the analytical technique, and offer a 1-click switch button to jump directly to the matched module with your data loaded.
-- **Export Center:** Download 600 DPI PNG, SVG, PDF, or LabPlot ASCII matrices with 1 click.
-
-### 2. Headless Script Execution
-All scripts support default benchmark files or custom file inputs (including Excel and OriginLab exports):
-
-```powershell
-# Using default benchmark files:
-python scripts\01_ftir.py
-python scripts\02_xrd.py
-python scripts\03_uv_vis_kinetics.py
-python scripts\04_xps.py
-python scripts\05_sem_edx.py
-
-# Using custom files (CSV, Excel, Origin exports, DAT, TXT):
-python scripts\01_ftir.py "path\to\my_ftir_origin.xlsx"
-python scripts\02_xrd.py "path\to\experimental_xrd.dat"
 ```
 
 ---

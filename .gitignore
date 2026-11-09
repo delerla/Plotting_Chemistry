@@ -1,25 +1,50 @@
-# Python
+# ==============================================================================
+# Git Ignore Configuration for Materials Characterization Hub
+# ==============================================================================
+
+# Python Environments & Caches
 __pycache__/
 *.py[cod]
-venv/
+*$py.class
 *.env
+.venv/
+venv/
+ENV/
+env/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
 
-# Large raw analytical binaries (store on local drive, exclude from git repo)
+# IDE & OS Artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Streamlit Local Session Settings
+.streamlit/secrets.toml
+
+# Large raw analytical binary instrument dumps
 *.raw
 *.spc
 *.dm3
-*.tif
-*.tiff
 *.bcf
 *.msa
 
-# Generated plots & export matrices
-output/**/*.png
-output/**/*.tiff
-output/**/*.pdf
-output/**/*.svg
-output/**/*.dat
+# Generated analytical output plots & tables (keeps directory structure via .gitkeep)
 output/*.png
-output/*.tiff
 output/*.pdf
 output/*.svg
+output/*.tiff
+output/*.dat
+output/*/*.png
+output/*/*.pdf
+output/*/*.svg
+output/*/*.tiff
+output/*/*.dat
+!output/**/.gitkeep
