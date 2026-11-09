@@ -15,8 +15,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from modules.export_utils import save_publication_figure, export_labplot_ascii
+from modules.file_parser import load_smart_file
 from modules.xrd_module import process_and_plot_xrd, generate_benchmark_xrd_data
-DATA_FILE = BASE_DIR / "data" / "xrd" / "xrd_data.csv"
+DEFAULT_DATA_FILE = BASE_DIR / "data" / "xrd" / "xrd_data.csv"
 OUTPUT_DIR = BASE_DIR / "output" / "xrd"
 ROOT_OUTPUT_FILE = BASE_DIR / "output" / "XRD_Stacked_Publication.png"
 
@@ -26,14 +27,21 @@ def main():
     print(" [2/5] Running XRD Crystallography Protocol")
     print("=" * 70)
     
-    if DATA_FILE.exists():
-        print(f"[INFO] Loading experimental data from: {DATA_FILE}")
-        df = pd.read_csv(DATA_FILE)
+    target_file = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_DATA_FILE
+    
+    if target_file.exists():
+        print(f"[INFO] Ingesting file via Smart Parser: {target_file}")
+        df, _, meta = load_smart_file(target_file)
+        if df is None or df.empty:
+            print("[WARN] Parsing produced empty dataframe. Generating benchmark patterns...")
+            df = generate_benchmark_xrd_data()
+        else:
+            print(f"[INFO] Successfully cleaned {meta['rows']} rows from {meta['format']}. Identified: {meta['detected_technique']}")
     else:
         print("[WARN] Data file missing. Generating benchmark XRD patterns...")
         df = generate_benchmark_xrd_data()
-        DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(DATA_FILE, index=False)
+        DEFAULT_DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(DEFAULT_DATA_FILE, index=False)
 
     fig, ax, fit_results, labplot_df = process_and_plot_xrd(
         df,

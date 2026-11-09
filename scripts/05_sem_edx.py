@@ -16,14 +16,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from modules.export_utils import save_publication_figure, export_labplot_ascii
+from modules.file_parser import load_smart_file
 from modules.sem_edx_module import (
     analyze_sem_micrograph,
     analyze_edx_spectrum,
     generate_benchmark_sem_image,
     generate_benchmark_edx_data
 )
-SEM_FILE = BASE_DIR / "data" / "sem_edx" / "sem_micrograph.png"
-EDX_FILE = BASE_DIR / "data" / "sem_edx" / "edx_spectrum.csv"
+DEFAULT_SEM_FILE = BASE_DIR / "data" / "sem_edx" / "sem_micrograph.png"
+DEFAULT_EDX_FILE = BASE_DIR / "data" / "sem_edx" / "edx_spectrum.csv"
 OUTPUT_DIR = BASE_DIR / "output" / "sem_edx"
 
 
@@ -34,15 +35,22 @@ def main():
     
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     
+    # Check if custom arguments supplied: script [sem_image_path] [edx_data_path]
+    sem_target = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_SEM_FILE
+    edx_target = Path(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_EDX_FILE
+
     # ----------------- Part A: SEM Image Analysis -----------------
     print("\n--- Part A: SEM Particle Segmentation & Sizing ---")
-    if SEM_FILE.exists():
-        print(f"[INFO] Loading SEM image from: {SEM_FILE}")
-        sem_img = cv2.imread(str(SEM_FILE))
+    if sem_target.exists():
+        print(f"[INFO] Ingesting SEM micrograph via Smart Parser: {sem_target}")
+        _, sem_img, meta_sem = load_smart_file(sem_target)
+        if sem_img is None:
+            sem_img = cv2.imread(str(sem_target))
     else:
         print("[WARN] SEM image missing. Generating benchmark micrograph...")
         sem_img = generate_benchmark_sem_image()
-        SEM_FILE.parent.mkdir(parents=True, exist_ok=True)
+        DEFAULT_SEM_FILE.parent.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(str(DEFAULT_SEM_FILE), sem_img)
         cv2.imwrite(str(SEM_FILE), sem_img)
 
     fig_sem, stats_sem, df_particles = analyze_sem_micrograph(
@@ -85,14 +93,16 @@ def main():
 
     # ----------------- Part B: EDX Microanalysis -----------------
     print("\n--- Part B: EDX Spectrum Elemental Quantification ---")
-    if EDX_FILE.exists():
-        print(f"[INFO] Loading EDX spectrum from: {EDX_FILE}")
-        df_edx = pd.read_csv(EDX_FILE)
+    if edx_target.exists():
+        print(f"[INFO] Ingesting EDX spectrum via Smart Parser: {edx_target}")
+        df_edx, _, meta_edx = load_smart_file(edx_target)
+        if df_edx is None or df_edx.empty:
+            df_edx = pd.read_csv(edx_target)
     else:
         print("[WARN] EDX spectrum missing. Generating benchmark spectrum...")
         df_edx = generate_benchmark_edx_data()
-        EDX_FILE.parent.mkdir(parents=True, exist_ok=True)
-        df_edx.to_csv(EDX_FILE, index=False)
+        DEFAULT_EDX_FILE.parent.mkdir(parents=True, exist_ok=True)
+        df_edx.to_csv(DEFAULT_EDX_FILE, index=False)
 
     fig_edx, res_edx, labplot_edx = analyze_edx_spectrum(
         df_edx,

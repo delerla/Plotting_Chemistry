@@ -15,8 +15,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from modules.export_utils import save_publication_figure, export_labplot_ascii
+from modules.file_parser import load_smart_file
 from modules.uv_vis_module import process_and_plot_uv_vis, generate_benchmark_uv_vis_data
-SPECTRA_FILE = BASE_DIR / "data" / "uv_vis" / "uv_vis_spectra.csv"
+DEFAULT_SPECTRA_FILE = BASE_DIR / "data" / "uv_vis" / "uv_vis_spectra.csv"
 OUTPUT_DIR = BASE_DIR / "output" / "uv_vis"
 
 
@@ -25,14 +26,21 @@ def main():
     print(" [3/5] Running UV-Vis & Photodegradation Kinetics Protocol")
     print("=" * 70)
     
-    if SPECTRA_FILE.exists():
-        print(f"[INFO] Loading UV-Vis spectra from: {SPECTRA_FILE}")
-        df_spectra = pd.read_csv(SPECTRA_FILE)
+    target_file = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_SPECTRA_FILE
+    
+    if target_file.exists():
+        print(f"[INFO] Ingesting file via Smart Parser: {target_file}")
+        df_spectra, _, meta = load_smart_file(target_file)
+        if df_spectra is None or df_spectra.empty:
+            print("[WARN] Parsing produced empty dataframe. Generating benchmark data...")
+            df_spectra, _ = generate_benchmark_uv_vis_data()
+        else:
+            print(f"[INFO] Successfully cleaned {meta['rows']} rows from {meta['format']}. Identified: {meta['detected_technique']}")
     else:
         print("[WARN] Spectra file missing. Generating benchmark data...")
         df_spectra, _ = generate_benchmark_uv_vis_data()
-        SPECTRA_FILE.parent.mkdir(parents=True, exist_ok=True)
-        df_spectra.to_csv(SPECTRA_FILE, index=False)
+        DEFAULT_SPECTRA_FILE.parent.mkdir(parents=True, exist_ok=True)
+        df_spectra.to_csv(DEFAULT_SPECTRA_FILE, index=False)
 
     fig, axes, metrics, labplot_spectra, labplot_kinetics = process_and_plot_uv_vis(
         df_spectra,

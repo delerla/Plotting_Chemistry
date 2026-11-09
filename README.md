@@ -2,6 +2,8 @@
 
 An open-source, local-first scientific analysis and visualization engine designed to replace proprietary suites (e.g., OriginLab) with Python 3.12, SciPy, lmfit, OpenCV, Matplotlib, and Streamlit.
 
+Equipped with **Universal Multi-Format Ingestion** (Excel, OriginLab exports, CSV, TSV, DAT, TXT, ASC, DPT, PRN, XY, and Micrographs) and **Physics-Based Technique Auto-Detection & Header Cleaning**.
+
 ---
 
 ## 🔬 Supported Characterization Techniques
@@ -27,11 +29,28 @@ An open-source, local-first scientific analysis and visualization engine designe
 
 ---
 
+## ⚡ Universal Smart Ingestion & Header Cleaning
+
+The hub features an intelligent pre-processing engine (`modules/file_parser.py`) that handles real-world instrument outputs:
+
+- **Broad File Format Support:**
+  - Modern & Legacy Excel: `.xlsx`, `.xls`
+  - OriginLab Worksheets & ASCII tables: `.dat`, `.txt`, `.csv`, `.tsv`, `.ascii`, `.asc`, `.dpt` (Bruker/PerkinElmer), `.prn`, `.xy`
+  - Micrograph Images: `.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff`, `.bmp`
+- **Smart Multi-Line Header Cleaning:**
+  - Detects and strips instrument metadata, comments, operator notes, and non-numeric leading lines.
+  - Recognizes OriginLab table layouts with Short Names, Long Names, Units, and Comments, synthesizing clean, publication-ready column labels (e.g. `Two-Theta (Degree)`, `Wavenumber (cm-1)`).
+  - Handles international decimal formats (commas vs dots, e.g. `35,42` -> `35.42`).
+- **Physics-Based Technique Auto-Detection:**
+  - Analyzes X-axis domains and physical signatures to automatically classify whether uploaded data corresponds to FTIR (cm⁻¹), XRD (2θ), UV-Vis (nm), XPS (eV), or EDX (keV), and automatically routes micrographs to SEM particle analysis.
+
+---
+
 ## 📁 Repository Structure
 
 ```text
 D:\Plotting_Chemistry\
-├── app.py                     # Streamlit Interactive Desktop GUI Hub
+├── app.py                     # Streamlit Interactive Desktop GUI Hub with Smart Ingestion
 ├── requirements.txt           # Python dependency specification
 ├── README.md                  # System overview and protocol documentation
 ├── docs\
@@ -44,6 +63,7 @@ D:\Plotting_Chemistry\
 │   ├── xps\
 │   └── sem_edx\
 ├── modules\                   # Core analytical modules
+│   ├── file_parser.py         # Smart file ingestion, header cleaning & classifier
 │   ├── export_utils.py        # 600 DPI, SVG, PDF, and LabPlot ASCII matrix formatter
 │   ├── ftir_module.py         # FTIR engine
 │   ├── xrd_module.py          # XRD engine
@@ -72,18 +92,24 @@ D:\Plotting_Chemistry\
 ```powershell
 streamlit run app.py
 ```
-Open your browser at `http://localhost:8501`. Use the sidebar to switch between analytical techniques, toggle parameters in real time, upload custom experimental files, and download 600 DPI PNG, SVG, PDF, or LabPlot ASCII matrices with 1 click.
+Open `http://localhost:8501`. 
+- **Global Dropzone:** Drag and drop any Excel file, Origin export, or instrument ASCII file in the sidebar. The system will inspect the headers, clean the table, classify the analytical technique, and offer a 1-click switch button to jump directly to the matched module with your data loaded.
+- **Export Center:** Download 600 DPI PNG, SVG, PDF, or LabPlot ASCII matrices with 1 click.
 
 ### 2. Headless Script Execution
-Each technique can be run headlessly from PowerShell 5.1:
+All scripts support default benchmark files or custom file inputs (including Excel and OriginLab exports):
 
 ```powershell
-# Run individual modules
+# Using default benchmark files:
 python scripts\01_ftir.py
 python scripts\02_xrd.py
 python scripts\03_uv_vis_kinetics.py
 python scripts\04_xps.py
 python scripts\05_sem_edx.py
+
+# Using custom files (CSV, Excel, Origin exports, DAT, TXT):
+python scripts\01_ftir.py "path\to\my_ftir_origin.xlsx"
+python scripts\02_xrd.py "path\to\experimental_xrd.dat"
 ```
 
 ---
@@ -104,5 +130,4 @@ All scripts and GUI exports produce ASCII data tables (`.dat`) equipped with sta
 # Column 2: <Name> [<Units>]
 # ==============================================================================
 ```
-
 These matrices load directly into LabPlot worksheets via `File -> Import -> Import File...` without requiring manual column mapping.

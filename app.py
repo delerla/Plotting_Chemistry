@@ -1,6 +1,8 @@
 """
 app.py - Automated Materials Characterization & Spectroscopic Analysis Hub
-Interactive Desktop GUI powered by Streamlit, SciPy, lmfit, OpenCV, and Matplotlib.
+Interactive Desktop GUI powered by Streamlit, SciPy, lmfit, OpenCV, Matplotlib, and OpenPyXL.
+Equipped with Universal Multi-Format Ingestion (Excel, OriginLab, CSV, TXT, DAT, ASC, DPT, PRN, Images)
+and Physics-Based Technique Auto-Detection & Header Cleaning.
 """
 
 import sys
@@ -16,6 +18,7 @@ import pandas as pd
 import streamlit as st
 
 from modules.export_utils import get_figure_bytes, get_labplot_ascii_bytes
+from modules.file_parser import load_smart_file, detect_technique
 from modules.ftir_module import process_and_plot_ftir, generate_benchmark_ftir_data
 from modules.xrd_module import process_and_plot_xrd, generate_benchmark_xrd_data
 from modules.uv_vis_module import process_and_plot_uv_vis, generate_benchmark_uv_vis_data
@@ -39,22 +42,23 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-header {
-        font-size: 2.2rem;
+        font-size: 2.1rem;
         font-weight: 700;
         color: #1e3d59;
         margin-bottom: 0.2rem;
     }
     .sub-header {
-        font-size: 1.05rem;
+        font-size: 1.0rem;
         color: #555555;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.2rem;
     }
-    .metric-card {
-        background-color: #f8f9fa;
-        border-left: 4px solid #175eac;
-        padding: 0.8rem 1rem;
-        border-radius: 4px;
-        margin-bottom: 0.8rem;
+    .smart-card {
+        background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fa 100%);
+        border: 1px solid #b8daff;
+        border-left: 5px solid #0066cc;
+        padding: 0.9rem 1.2rem;
+        border-radius: 6px;
+        margin-bottom: 1.2rem;
     }
     .stDownloadButton button {
         width: 100%;
@@ -64,22 +68,86 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar Navigation
-st.sidebar.markdown("### 🔬 Analysis Techniques")
-technique = st.sidebar.radio(
-    "Select Technique:",
-    [
-        "1. FTIR Spectroscopy",
-        "2. XRD Crystallography",
-        "3. UV-Vis & Dye Kinetics",
-        "4. XPS Core Deconvolution",
-        "5. SEM & EDX Microanalysis"
-    ]
-)
+# List of supported file extensions
+ALL_SUPPORTED_EXTS = ["csv", "xlsx", "xls", "txt", "dat", "tsv", "ascii", "asc", "dpt", "prn", "xy", "png", "jpg", "tif", "tiff"]
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 📁 Interoperability")
-st.sidebar.caption("All modules export publication-ready 600 DPI PNG, SVG, PDF, and LabPlot ASCII matrices.")
+TECHNIQUES = [
+    "1. FTIR Spectroscopy",
+    "2. XRD Crystallography",
+    "3. UV-Vis & Dye Kinetics",
+    "4. XPS Core Deconvolution",
+    "5. SEM & EDX Microanalysis"
+]
+
+if "current_technique" not in st.session_state:
+    st.session_state.current_technique = TECHNIQUES[0]
+
+# ==============================================================================
+# GLOBAL SMART DROPZONE (AUTO-DETECT & HEADER CLEANER)
+# ==============================================================================
+with st.sidebar:
+    st.markdown("### ⚡ Universal Smart Ingestion")
+    st.caption("Drop any file (Excel, OriginLab export, CSV, DAT, TXT, ASC, DPT, Micrograph):")
+    smart_uploaded = st.file_uploader(
+        "Auto-Classify & Clean Any File",
+        type=ALL_SUPPORTED_EXTS,
+        key="smart_global_uploader",
+        help="Uploads Excel (.xlsx/.xls), OriginLab worksheets, or ASCII files. Cleans multi-line headers, handles comma decimals, and detects technique automatically."
+    )
+    
+    if smart_uploaded is not None:
+        file_bytes = smart_uploaded.read()
+        smart_df, smart_img, meta = load_smart_file(file_bytes, filename=smart_uploaded.name)
+        
+        if meta.get('detected_technique'):
+            target_tech = meta['detected_technique']
+            # Match with standard dropdown item
+            matched_tech = next((t for t in TECHNIQUES if t[:2] == target_tech[:2]), target_tech)
+            st.session_state["smart_data"] = {
+                'df': smart_df,
+                'img': smart_img,
+                'meta': meta,
+                'matched_tech': matched_tech
+            }
+            if st.button(f"🎯 Switch to {matched_tech[:6]}", key="btn_switch_tech"):
+                st.session_state.current_technique = matched_tech
+                st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 🔬 Technique Selection")
+    selected_tech = st.radio(
+        "Active Technique:",
+        TECHNIQUES,
+        index=TECHNIQUES.index(st.session_state.current_technique) if st.session_state.current_technique in TECHNIQUES else 0,
+        key="radio_technique"
+    )
+    st.session_state.current_technique = selected_tech
+
+    st.markdown("---")
+    st.markdown("### 📁 Interoperability")
+    st.caption("Publication raster (600 DPI PNG), vectors (SVG, PDF), and LabPlot ASCII matrices (.dat) exported across all modules.")
+
+# Display Smart Banner if a file was recently analyzed via smart uploader
+if "smart_data" in st.session_state:
+    s_info = st.session_state["smart_data"]
+    s_meta = s_info['meta']
+    st.markdown(f"""
+    <div class="smart-card">
+        <strong>📂 Smart Ingestion Summary:</strong> <code>{s_meta['filename']}</code> ({s_meta['format']})<br>
+        <strong>🔬 Detected Technique:</strong> <b>{s_meta['detected_technique']}</b> &nbsp;•&nbsp; 
+        <strong>Confidence:</strong> <code>{s_meta['confidence']*100:.0f}%</code><br>
+        <small style="color: #444444;">{s_meta['reason']}</small>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    with st.expander("🔍 View Cleaned Header & Numerical Table", expanded=False):
+        if s_info['df'] is not None:
+            st.write(f"Cleaned {s_meta['rows']} rows and {len(s_meta['columns'])} columns:")
+            st.dataframe(s_info['df'].head(8), use_container_width=True)
+        elif s_info['img'] is not None:
+            st.write(f"Micrograph Image Shape: {s_info['img'].shape}")
+
+technique = st.session_state.current_technique
 
 # ==============================================================================
 # 1. FTIR MODULE
@@ -92,14 +160,26 @@ if technique.startswith("1"):
     
     with col_ctrl:
         st.subheader("Data & Parameters")
-        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload CSV"], key="ftir_src")
+        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload File (Excel / Origin / CSV / DAT)"], key="ftir_src")
         
-        if data_source == "Upload CSV":
-            uploaded_file = st.file_uploader("Upload FTIR CSV (Col 1: Wavenumber, Subsequent: %T)", type=["csv"], key="ftir_up")
-            if uploaded_file is not None:
-                df_ftir = pd.read_csv(uploaded_file)
+        if data_source != "Use Benchmark Data":
+            up_file = st.file_uploader(
+                "Upload File (Col 1: Wavenumber, Subsequent: %T)",
+                type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "asc", "dpt"],
+                key="ftir_up"
+            )
+            if up_file is not None:
+                parsed_df, _, meta_up = load_smart_file(up_file.read(), filename=up_file.name)
+                if parsed_df is not None and not parsed_df.empty:
+                    df_ftir = parsed_df
+                    st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
+                else:
+                    st.error("Could not parse numeric columns. Falling back to benchmark.")
+                    df_ftir = generate_benchmark_ftir_data()
+            elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("1"):
+                df_ftir = st.session_state["smart_data"]['df']
             else:
-                st.info("Awaiting upload. Showing benchmark data.")
+                st.info("Awaiting file upload. Showing benchmark.")
                 df_ftir = generate_benchmark_ftir_data()
         else:
             default_path = BASE_DIR / "data" / "ftir" / "ftir_data.csv"
@@ -120,14 +200,12 @@ if technique.startswith("1"):
         )
         st.pyplot(fig_ftir)
 
-        # Peak Results Table
         with st.expander("📊 Detected Vibrational Absorption Bands", expanded=True):
             peak_rows = []
             for smp, p_list in peaks_dict.items():
                 peak_rows.append({"Sample": smp, "Detected Bands (cm⁻¹)": ", ".join(map(str, p_list)) if p_list else "None detected"})
             st.dataframe(pd.DataFrame(peak_rows), use_container_width=True)
 
-        # Export Buttons
         st.markdown("#### 📥 Publication & LabPlot Export")
         c1, c2, c3, c4 = st.columns(4)
         with c1:
@@ -179,14 +257,26 @@ elif technique.startswith("2"):
     
     with col_ctrl:
         st.subheader("Data & Parameters")
-        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload CSV"], key="xrd_src")
+        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload File (Excel / Origin / CSV / DAT / XY / PRN)"], key="xrd_src")
         
-        if data_source == "Upload CSV":
-            uploaded_file = st.file_uploader("Upload XRD CSV (Col 1: 2θ, Subsequent: Intensity)", type=["csv"], key="xrd_up")
-            if uploaded_file is not None:
-                df_xrd = pd.read_csv(uploaded_file)
+        if data_source != "Use Benchmark Data":
+            up_file = st.file_uploader(
+                "Upload File (Col 1: 2θ, Subsequent: Intensity)",
+                type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "xy", "prn", "asc"],
+                key="xrd_up"
+            )
+            if up_file is not None:
+                parsed_df, _, meta_up = load_smart_file(up_file.read(), filename=up_file.name)
+                if parsed_df is not None and not parsed_df.empty:
+                    df_xrd = parsed_df
+                    st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
+                else:
+                    st.error("Could not parse numeric columns. Falling back to benchmark.")
+                    df_xrd = generate_benchmark_xrd_data()
+            elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("2"):
+                df_xrd = st.session_state["smart_data"]['df']
             else:
-                st.info("Awaiting upload. Showing benchmark data.")
+                st.info("Awaiting file upload. Showing benchmark.")
                 df_xrd = generate_benchmark_xrd_data()
         else:
             default_path = BASE_DIR / "data" / "xrd" / "xrd_data.csv"
@@ -273,21 +363,30 @@ elif technique.startswith("3"):
     
     with col_ctrl:
         st.subheader("Data & Parameters")
-        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload CSV"], key="uv_src")
+        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload File (Excel / Origin / CSV / DAT)"], key="uv_src")
         
-        if data_source == "Upload CSV":
-            uploaded_file = st.file_uploader("Upload UV-Vis CSV (Col 1: Wavelength, Subsequent: Time Traces)", type=["csv"], key="uv_up")
-            if uploaded_file is not None:
-                df_uv = pd.read_csv(uploaded_file)
+        if data_source != "Use Benchmark Data":
+            up_file = st.file_uploader(
+                "Upload File (Col 1: Wavelength, Subsequent: Time Traces)",
+                type=["csv", "xlsx", "xls", "txt", "dat", "tsv"],
+                key="uv_up"
+            )
+            if up_file is not None:
+                parsed_df, _, meta_up = load_smart_file(up_file.read(), filename=up_file.name)
+                if parsed_df is not None and not parsed_df.empty:
+                    df_uv = parsed_df
+                    st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
+                else:
+                    st.error("Could not parse numeric columns. Falling back to benchmark.")
+                    df_uv, _ = generate_benchmark_uv_vis_data()
+            elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("3"):
+                df_uv = st.session_state["smart_data"]['df']
             else:
-                st.info("Awaiting upload. Showing benchmark data.")
+                st.info("Awaiting file upload. Showing benchmark.")
                 df_uv, _ = generate_benchmark_uv_vis_data()
         else:
             default_path = BASE_DIR / "data" / "uv_vis" / "uv_vis_spectra.csv"
-            if default_path.exists():
-                df_uv = pd.read_csv(default_path)
-            else:
-                df_uv, _ = generate_benchmark_uv_vis_data()
+            df_uv = pd.read_csv(default_path) if default_path.exists() else generate_benchmark_uv_vis_data()[0]
 
         target_lambda = st.number_input("Target Peak Wavelength λ_max (nm)", value=554.0, step=1.0)
         c0_initial = st.number_input("Initial Dye Concentration C₀ (mg/L)", value=10.0, step=1.0)
@@ -300,7 +399,6 @@ elif technique.startswith("3"):
         )
         st.pyplot(fig_uv)
 
-        # Metrics display
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("λ_max Monitored", f"{uv_metrics['lambda_max_nm']} nm")
         m2.metric("k_app (PFO)", f"{uv_metrics['k_pseudo_first_order_min-1']:.4f} min⁻¹", f"R² = {uv_metrics['R2_pseudo_first_order']:.4f}")
@@ -363,14 +461,26 @@ elif technique.startswith("4"):
     
     with col_ctrl:
         st.subheader("Data & Fitting Settings")
-        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload CSV"], key="xps_src")
+        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload File (Excel / Origin / CSV / DAT)"], key="xps_src")
         
-        if data_source == "Upload CSV":
-            uploaded_file = st.file_uploader("Upload XPS CSV (Col 1: Binding Energy eV, Col 2: Counts/s)", type=["csv"], key="xps_up")
-            if uploaded_file is not None:
-                df_xps = pd.read_csv(uploaded_file)
+        if data_source != "Use Benchmark Data":
+            up_file = st.file_uploader(
+                "Upload File (Col 1: Binding Energy eV, Col 2: Counts/s)",
+                type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "asc"],
+                key="xps_up"
+            )
+            if up_file is not None:
+                parsed_df, _, meta_up = load_smart_file(up_file.read(), filename=up_file.name)
+                if parsed_df is not None and not parsed_df.empty:
+                    df_xps = parsed_df
+                    st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
+                else:
+                    st.error("Could not parse numeric columns. Falling back to benchmark.")
+                    df_xps = generate_benchmark_xps_data()
+            elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("4"):
+                df_xps = st.session_state["smart_data"]['df']
             else:
-                st.info("Awaiting upload. Showing benchmark C 1s data.")
+                st.info("Awaiting file upload. Showing benchmark.")
                 df_xps = generate_benchmark_xps_data()
         else:
             default_path = BASE_DIR / "data" / "xps" / "c1s_high_res.csv"
@@ -387,7 +497,6 @@ elif technique.startswith("4"):
         )
         st.pyplot(fig_xps)
 
-        # Fit quality & quantification
         m1, m2, m3 = st.columns(3)
         m1.metric("BE Shift Applied", f"{summary_xps['be_shift_applied_eV']:+.3f} eV")
         m2.metric("Fit R²", f"{summary_xps['r_squared']:.4f}")
@@ -449,12 +558,18 @@ elif technique.startswith("5"):
         col_ctrl, col_view = st.columns([1, 2.5])
         with col_ctrl:
             st.subheader("SEM Settings")
-            sem_source = st.radio("Image Source:", ["Benchmark Micrograph", "Upload Image"], key="sem_src")
-            if sem_source == "Upload Image":
-                uploaded_img = st.file_uploader("Upload SEM Image (PNG/TIFF/JPG)", type=["png", "jpg", "jpeg", "tif", "tiff"], key="sem_up")
+            sem_source = st.radio("Image Source:", ["Benchmark Micrograph", "Upload Image (PNG/TIFF/JPG/BMP)"], key="sem_src")
+            if sem_source != "Benchmark Micrograph":
+                uploaded_img = st.file_uploader(
+                    "Upload SEM Image",
+                    type=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
+                    key="sem_up"
+                )
                 if uploaded_img is not None:
-                    file_bytes = np.asarray(bytearray(uploaded_img.read()), dtype=np.uint8)
-                    sem_img = cv2.imdecode(file_bytes, cv2.IMREAD_GRAYSCALE)
+                    _, parsed_img, _ = load_smart_file(uploaded_img.read(), filename=uploaded_img.name)
+                    sem_img = parsed_img if parsed_img is not None else generate_benchmark_sem_image()
+                elif "smart_data" in st.session_state and st.session_state["smart_data"]['img'] is not None:
+                    sem_img = st.session_state["smart_data"]['img']
                 else:
                     st.info("Awaiting image upload. Showing benchmark.")
                     sem_img = generate_benchmark_sem_image()
@@ -521,11 +636,23 @@ elif technique.startswith("5"):
         col_ctrl2, col_view2 = st.columns([1, 2.5])
         with col_ctrl2:
             st.subheader("EDX Settings")
-            edx_source = st.radio("Data Source:", ["Benchmark EDX", "Upload CSV"], key="edx_src")
-            if edx_source == "Upload CSV":
-                uploaded_edx = st.file_uploader("Upload EDX CSV (Col 1: Energy keV, Col 2: Counts)", type=["csv"], key="edx_up")
-                if uploaded_edx is not None:
-                    df_edx = pd.read_csv(uploaded_edx)
+            edx_source = st.radio("Data Source:", ["Benchmark EDX", "Upload File (Excel / Origin / CSV / DAT)"], key="edx_src")
+            if edx_source != "Benchmark EDX":
+                up_edx = st.file_uploader(
+                    "Upload File (Col 1: Energy keV, Col 2: Counts)",
+                    type=["csv", "xlsx", "xls", "txt", "dat", "tsv"],
+                    key="edx_up"
+                )
+                if up_edx is not None:
+                    parsed_df, _, meta_up = load_smart_file(up_edx.read(), filename=up_edx.name)
+                    if parsed_df is not None and not parsed_df.empty:
+                        df_edx = parsed_df
+                        st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
+                    else:
+                        st.error("Could not parse numeric columns. Falling back to benchmark.")
+                        df_edx = generate_benchmark_edx_data()
+                elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("5"):
+                    df_edx = st.session_state["smart_data"]['df']
                 else:
                     st.info("Awaiting EDX upload. Showing benchmark.")
                     df_edx = generate_benchmark_edx_data()

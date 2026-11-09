@@ -15,8 +15,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from modules.export_utils import save_publication_figure, export_labplot_ascii
+from modules.file_parser import load_smart_file
 from modules.xps_module import deconvolve_xps, generate_benchmark_xps_data
-DATA_FILE = BASE_DIR / "data" / "xps" / "c1s_high_res.csv"
+DEFAULT_DATA_FILE = BASE_DIR / "data" / "xps" / "c1s_high_res.csv"
 OUTPUT_DIR = BASE_DIR / "output" / "xps"
 
 
@@ -25,14 +26,21 @@ def main():
     print(" [4/5] Running XPS High-Resolution Core-Level Protocol")
     print("=" * 70)
     
-    if DATA_FILE.exists():
-        print(f"[INFO] Loading XPS data from: {DATA_FILE}")
-        df = pd.read_csv(DATA_FILE)
+    target_file = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_DATA_FILE
+    
+    if target_file.exists():
+        print(f"[INFO] Ingesting file via Smart Parser: {target_file}")
+        df, _, meta = load_smart_file(target_file)
+        if df is None or df.empty:
+            print("[WARN] Parsing produced empty dataframe. Generating benchmark C 1s spectrum...")
+            df = generate_benchmark_xps_data()
+        else:
+            print(f"[INFO] Successfully cleaned {meta['rows']} rows from {meta['format']}. Identified: {meta['detected_technique']}")
     else:
         print("[WARN] Data file missing. Generating benchmark C 1s spectrum...")
         df = generate_benchmark_xps_data()
-        DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(DATA_FILE, index=False)
+        DEFAULT_DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(DEFAULT_DATA_FILE, index=False)
 
     fig, summary, labplot_df = deconvolve_xps(
         df,
