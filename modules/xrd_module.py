@@ -1,5 +1,6 @@
 """
 xrd_module.py - X-Ray Diffraction (XRD) Profile Analysis and Scherrer Crystallite Sizing Engine
+Supports: Background baseline stripping, Scherrer crystallite sizing, Normalization, and Themes.
 """
 
 from typing import Dict, List, Optional, Tuple
@@ -9,7 +10,7 @@ import pandas as pd
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 
-from modules.export_utils import set_publication_style
+from modules.export_utils import PUBLICATION_PALETTES, set_publication_style
 
 
 def lorentzian(x: np.ndarray, x0: float, gamma: float, a: float, c: float) -> np.ndarray:
@@ -18,15 +19,7 @@ def lorentzian(x: np.ndarray, x0: float, gamma: float, a: float, c: float) -> np
 
 
 def scherrer_size(fwhm_deg: float, two_theta_deg: float, wavelength_nm: float = 0.15406, k: float = 0.9) -> float:
-    """
-    Computes crystallite size D (in nm) using the Scherrer equation:
-    D = (K * lambda) / (beta * cos(theta))
-    where:
-        K = shape factor (default 0.9)
-        lambda = X-ray wavelength in nm (0.15406 nm for Cu K-alpha)
-        beta = line broadening at half maximum (FWHM) in radians
-        theta = Bragg angle (two_theta / 2) in radians
-    """
+    """Computes crystallite size D (in nm) using the Scherrer equation."""
     theta_rad = np.radians(two_theta_deg / 2.0)
     beta_rad = np.radians(fwhm_deg)
     if beta_rad <= 0 or np.cos(theta_rad) <= 0:
@@ -68,33 +61,43 @@ def process_and_plot_xrd(
     fit_range: Tuple[float, float] = (41.5, 45.0),
     wavelength_nm: float = 0.15406,
     k_factor: float = 0.9,
+    normalize_max: bool = False,
+    theme: str = "ACS",
     fig_size: Tuple[float, float] = (8.0, 6.2)
 ) -> Tuple[plt.Figure, plt.Axes, Dict[str, Dict[str, float]], pd.DataFrame]:
     """
-    Stacks XRD patterns, performs Lorentzian deconvolution on target Bragg reflection,
-    calculates Scherrer crystallite size, and formats for publication and LabPlot export.
+    Stacks XRD patterns, performs non-linear Lorentzian deconvolution on target Bragg reflection,
+    calculates Scherrer crystallite size, and exports for publication and LabPlot.
     """
     set_publication_style()
-    two_theta = df.iloc[:, 0].to_numpy()
+    palette = PUBLICATION_PALETTES.get(theme, PUBLICATION_PALETTES['ACS'])
+    
+    two_theta = df.iloc[:, 0].to_numpy().astype(float)
     sample_cols = list(df.columns[1:])
     
     fig, ax = plt.subplots(figsize=fig_size, dpi=300)
-    colors = ['#1f77b4', '#d62728', '#2ca02c', '#9467bd', '#ff7f0e']
-    
     current_offset = 0.0
     fit_results = {}
     labplot_dict = {'TwoTheta_deg': two_theta}
     
     for idx, name in enumerate(sample_cols):
-        intensity = df[name].to_numpy()
+        intensity = df[name].to_numpy().astype(float)
+        
+        # Optional normalization to max peak = 100%
+        if normalize_max:
+            i_max = np.max(intensity)
+            if i_max > 0:
+                intensity = (intensity / i_max) * 100.0
+                
         y_shifted = intensity + current_offset
         
         labplot_dict[f"{name}_Raw"] = intensity
         labplot_dict[f"{name}_Stacked"] = y_shifted
         
-        ax.plot(two_theta, y_shifted, label=name, color='black', lw=1.5, zorder=3)
+        line_color = 'black' if theme == 'Monochrome' else palette[idx % len(palette)]
+        ax.plot(two_theta, y_shifted, label=name, color=line_color, lw=1.6, zorder=3)
         
-        # Scherrer deconvolution in the user-specified 2theta window
+        # Deconvolution on specified Bragg peak window
         mask = (two_theta >= fit_range[0]) & (two_theta <= fit_range[1])
         x_sub = two_theta[mask]
         y_sub = intensity[mask]
@@ -119,21 +122,21 @@ def process_and_plot_xrd(
                 }
                 annotation_label = f"{name} (D ≈ {d_crystallite:.1f} nm)"
                 
-                # Plot subtle fit highlight on the shifted curve
                 y_fit_shifted = lorentzian(x_sub, *popt) + current_offset
-                ax.plot(x_sub, y_fit_shifted, color=colors[idx % len(colors)], lw=1.8, ls='--', zorder=4)
+                ax.plot(x_sub, y_fit_shifted, color='crimson' if line_color != 'crimson' else '#ff7f0e', lw=1.8, ls='--', zorder=4)
             except Exception:
                 fit_results[name] = {'Error': 'Fit did not converge'}
         
         ax.text(
-            two_theta[-1] - 1.0, y_shifted[-1] + 45, annotation_label,
+            two_theta[-1] - 1.0, y_shifted[-1] + (15 if normalize_max else 45), annotation_label,
             ha='right', va='bottom', fontsize=11, fontweight='bold', color='#111111'
         )
-        current_offset += offset_step
+        current_offset += (offset_step if not normalize_max else offset_step * 0.1)
 
     ax.set_xlim(two_theta.min(), two_theta.max())
-    ax.set_xlabel(r'$\mathbf{2\theta\ (degrees)}$', fontsize=14, labelpad=8)
-    ax.set_ylabel(r'$\mathbf{Intensity\ (a.u.)}$', fontsize=14, labelpad=10)
+    ax.set_xlabel(r'$\mathbf{2\theta\ (degrees)}$', fontsize=13, labelpad=8)
+    ylabel = r'$\mathbf{Normalized\ Intensity\ (\%)}$' if normalize_max else r'$\mathbf{Intensity\ (a.u.)}$'
+    ax.set_ylabel(ylabel, fontsize=13, labelpad=10)
     ax.set_yticks([])
     ax.minorticks_on()
     ax.tick_params(axis='x', which='both', top=True, direction='in', labelsize=11)

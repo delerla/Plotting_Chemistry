@@ -246,6 +246,13 @@ def load_smart_file(
     Returns:
         (dataframe_or_None, image_or_None, metadata_dict)
     """
+    if isinstance(file_input, (str, Path)):
+        p = Path(file_input)
+        filename = filename or p.name
+        ext = p.suffix.lower()
+    else:
+        ext = Path(filename).suffix.lower() if filename else ""
+
     metadata = {
         'filename': filename,
         'format': 'unknown',
@@ -258,9 +265,7 @@ def load_smart_file(
 
     # Handle image file inputs for SEM
     img_exts = ['.png', '.jpg', '.jpeg', '.tif', '.tiff', '.bmp']
-    ext = Path(filename).suffix.lower() if filename else ""
-
-    if ext in img_exts or (isinstance(file_input, str) and Path(file_input).suffix.lower() in img_exts):
+    if ext in img_exts:
         import cv2
         if isinstance(file_input, (str, Path)):
             img = cv2.imread(str(file_input), cv2.IMREAD_GRAYSCALE)
@@ -283,9 +288,6 @@ def load_smart_file(
 
     # Read binary bytes
     if isinstance(file_input, (str, Path)):
-        p = Path(file_input)
-        filename = filename or p.name
-        ext = p.suffix.lower()
         with open(p, 'rb') as f:
             raw_bytes = f.read()
     elif isinstance(file_input, io.BytesIO):

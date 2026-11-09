@@ -1,8 +1,12 @@
 """
 app.py - Automated Materials Characterization & Spectroscopic Analysis Hub
-Interactive Desktop GUI powered by Streamlit, SciPy, lmfit, OpenCV, Matplotlib, and OpenPyXL.
-Equipped with Universal Multi-Format Ingestion (Excel, OriginLab, CSV, TXT, DAT, ASC, DPT, PRN, Images)
-and Physics-Based Technique Auto-Detection & Header Cleaning.
+Professional Scientific GUI powered by Streamlit, SciPy, lmfit, OpenCV, Matplotlib, and OpenPyXL.
+Equipped with:
+- Universal Ingestion (Excel, OriginLab, CSV, DAT, TXT, ASC, DPT, PRN, Images)
+- Physics-Based Technique Auto-Detection & Multi-Line Header Cleaning
+- Publication Journal Themes (Nature, Science, ACS, RSC, Monochrome)
+- 1-Click Complete Publication Package (.ZIP) Exporter
+- High-Precision Deconvolution & Crystallite Sizing Engine
 """
 
 import sys
@@ -17,8 +21,13 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from modules.export_utils import get_figure_bytes, get_labplot_ascii_bytes
-from modules.file_parser import load_smart_file, detect_technique
+from modules.export_utils import (
+    PUBLICATION_PALETTES,
+    build_analysis_bundle_zip,
+    get_figure_bytes,
+    get_labplot_ascii_bytes
+)
+from modules.file_parser import load_smart_file
 from modules.ftir_module import process_and_plot_ftir, generate_benchmark_ftir_data
 from modules.xrd_module import process_and_plot_xrd, generate_benchmark_xrd_data
 from modules.uv_vis_module import process_and_plot_uv_vis, generate_benchmark_uv_vis_data
@@ -38,14 +47,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for scientific styling
+# Professional CSS Styling
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
     .main-header {
         font-size: 2.1rem;
         font-weight: 700;
-        color: #1e3d59;
-        margin-bottom: 0.2rem;
+        color: #0f2b48;
+        margin-bottom: 0.15rem;
+        letter-spacing: -0.02em;
     }
     .sub-header {
         font-size: 1.0rem;
@@ -56,7 +70,7 @@ st.markdown("""
         background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fa 100%);
         border: 1px solid #b8daff;
         border-left: 5px solid #0066cc;
-        padding: 0.9rem 1.2rem;
+        padding: 0.85rem 1.1rem;
         border-radius: 6px;
         margin-bottom: 1.2rem;
     }
@@ -64,12 +78,19 @@ st.markdown("""
         width: 100%;
         border-radius: 4px;
         font-weight: 600;
+        transition: all 0.2s ease-in-out;
+    }
+    .stDownloadButton button:hover {
+        border-color: #0066cc;
+        color: #0066cc;
+    }
+    div[data-testid="stMetricValue"] {
+        font-size: 1.45rem;
+        font-weight: 700;
+        color: #0f2b48;
     }
 </style>
 """, unsafe_allow_html=True)
-
-# List of supported file extensions
-ALL_SUPPORTED_EXTS = ["csv", "xlsx", "xls", "txt", "dat", "tsv", "ascii", "asc", "dpt", "prn", "xy", "png", "jpg", "tif", "tiff"]
 
 TECHNIQUES = [
     "1. FTIR Spectroscopy",
@@ -79,20 +100,33 @@ TECHNIQUES = [
     "5. SEM & EDX Microanalysis"
 ]
 
+ALL_SUPPORTED_EXTS = ["csv", "xlsx", "xls", "txt", "dat", "tsv", "ascii", "asc", "dpt", "prn", "xy", "png", "jpg", "tif", "tiff"]
+
 if "current_technique" not in st.session_state:
     st.session_state.current_technique = TECHNIQUES[0]
 
 # ==============================================================================
-# GLOBAL SMART DROPZONE (AUTO-DETECT & HEADER CLEANER)
+# SIDEBAR CONTROLS & UNIVERSAL SMART INGESTION
 # ==============================================================================
 with st.sidebar:
-    st.markdown("### ⚡ Universal Smart Ingestion")
-    st.caption("Drop any file (Excel, OriginLab export, CSV, DAT, TXT, ASC, DPT, Micrograph):")
+    st.markdown("### 🔬 Materials Characterization")
+    st.caption("Commercial-grade open-source alternative to OriginLab.")
+    
+    selected_theme = st.selectbox(
+        "🎨 Publication Color Palette:",
+        list(PUBLICATION_PALETTES.keys()),
+        index=2,
+        help="Applies standard editorial color palettes matching top scientific journals."
+    )
+
+    st.markdown("---")
+    st.markdown("### ⚡ Smart File Dropzone")
+    st.caption("Upload any file (Excel, OriginLab export, CSV, DAT, ASC, DPT, Micrograph):")
     smart_uploaded = st.file_uploader(
-        "Auto-Classify & Clean Any File",
+        "Drop Any File for Auto-Detection",
         type=ALL_SUPPORTED_EXTS,
         key="smart_global_uploader",
-        help="Uploads Excel (.xlsx/.xls), OriginLab worksheets, or ASCII files. Cleans multi-line headers, handles comma decimals, and detects technique automatically."
+        help="Cleans multi-line headers, handles comma decimals, and detects technique automatically."
     )
     
     if smart_uploaded is not None:
@@ -101,7 +135,6 @@ with st.sidebar:
         
         if meta.get('detected_technique'):
             target_tech = meta['detected_technique']
-            # Match with standard dropdown item
             matched_tech = next((t for t in TECHNIQUES if t[:2] == target_tech[:2]), target_tech)
             st.session_state["smart_data"] = {
                 'df': smart_df,
@@ -114,9 +147,9 @@ with st.sidebar:
                 st.rerun()
 
     st.markdown("---")
-    st.markdown("### 🔬 Technique Selection")
+    st.markdown("### 📑 Module Navigation")
     selected_tech = st.radio(
-        "Active Technique:",
+        "Select Technique:",
         TECHNIQUES,
         index=TECHNIQUES.index(st.session_state.current_technique) if st.session_state.current_technique in TECHNIQUES else 0,
         key="radio_technique"
@@ -124,45 +157,43 @@ with st.sidebar:
     st.session_state.current_technique = selected_tech
 
     st.markdown("---")
-    st.markdown("### 📁 Interoperability")
-    st.caption("Publication raster (600 DPI PNG), vectors (SVG, PDF), and LabPlot ASCII matrices (.dat) exported across all modules.")
+    st.caption("LabPlot ASCII (.dat), 600 DPI PNG, Vector SVG & PDF exports enabled.")
 
-# Display Smart Banner if a file was recently analyzed via smart uploader
+# Smart Ingestion Notification Banner
 if "smart_data" in st.session_state:
     s_info = st.session_state["smart_data"]
     s_meta = s_info['meta']
     st.markdown(f"""
     <div class="smart-card">
-        <strong>📂 Smart Ingestion Summary:</strong> <code>{s_meta['filename']}</code> ({s_meta['format']})<br>
-        <strong>🔬 Detected Technique:</strong> <b>{s_meta['detected_technique']}</b> &nbsp;•&nbsp; 
-        <strong>Confidence:</strong> <code>{s_meta['confidence']*100:.0f}%</code><br>
+        <strong>📂 Ingested File:</strong> <code>{s_meta['filename']}</code> ({s_meta['format']}) &nbsp;•&nbsp; 
+        <strong>Detected Technique:</strong> <b>{s_meta['detected_technique']}</b> (<code>{s_meta['confidence']*100:.0f}% confidence</code>)<br>
         <small style="color: #444444;">{s_meta['reason']}</small>
     </div>
     """, unsafe_allow_html=True)
     
-    with st.expander("🔍 View Cleaned Header & Numerical Table", expanded=False):
+    with st.expander("🔍 Inspect Cleaned Header & Numerical Table", expanded=False):
         if s_info['df'] is not None:
             st.write(f"Cleaned {s_meta['rows']} rows and {len(s_meta['columns'])} columns:")
             st.dataframe(s_info['df'].head(8), use_container_width=True)
         elif s_info['img'] is not None:
-            st.write(f"Micrograph Image Shape: {s_info['img'].shape}")
+            st.write(f"Micrograph Dimensions: {s_info['img'].shape}")
 
 technique = st.session_state.current_technique
 
 # ==============================================================================
-# 1. FTIR MODULE
+# 1. FTIR SPECTROSCOPY MODULE
 # ==============================================================================
 if technique.startswith("1"):
     st.markdown('<div class="main-header">Fourier-Transform Infrared (FTIR) Spectroscopy</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Multi-sample spectral stacking, Savitzky-Golay filtering, and automatic vibrational band detection.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Multi-sample spectral stacking, Savitzky-Golay filtering, normalization, and vibrational band deconvolution.</div>', unsafe_allow_html=True)
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
     with col_ctrl:
         st.subheader("Data & Parameters")
-        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload File (Excel / Origin / CSV / DAT)"], key="ftir_src")
+        data_source = st.radio("Data Source:", ["Benchmark Spectra", "Upload File (Excel / Origin / CSV / DAT)"], key="ftir_src")
         
-        if data_source != "Use Benchmark Data":
+        if data_source != "Benchmark Spectra":
             up_file = st.file_uploader(
                 "Upload File (Col 1: Wavenumber, Subsequent: %T)",
                 type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "asc", "dpt"],
@@ -174,18 +205,20 @@ if technique.startswith("1"):
                     df_ftir = parsed_df
                     st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
                 else:
-                    st.error("Could not parse numeric columns. Falling back to benchmark.")
+                    st.error("Parsing failed. Using benchmark.")
                     df_ftir = generate_benchmark_ftir_data()
             elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("1"):
                 df_ftir = st.session_state["smart_data"]['df']
             else:
-                st.info("Awaiting file upload. Showing benchmark.")
+                st.info("Awaiting upload. Showing benchmark.")
                 df_ftir = generate_benchmark_ftir_data()
         else:
             default_path = BASE_DIR / "data" / "ftir" / "ftir_data.csv"
             df_ftir = pd.read_csv(default_path) if default_path.exists() else generate_benchmark_ftir_data()
 
-        step_offset = st.slider("Vertical Stacking Offset (%)", min_value=10.0, max_value=80.0, value=35.0, step=5.0)
+        ftir_mode = st.selectbox("Display Mode:", ["Transmittance (%T)", "Absorbance (A = -log10 T)"])
+        norm_mode = st.selectbox("Normalization:", ["None", "Min-Max (0 to 1)", "Zero Baseline"])
+        step_offset = st.slider("Stacking Offset", min_value=0.0, max_value=80.0, value=35.0, step=5.0)
         sg_window = st.slider("Savitzky-Golay Window", min_value=5, max_value=35, value=11, step=2)
         sg_poly = st.slider("Polynomial Order", min_value=1, max_value=4, value=2, step=1)
         prominence = st.slider("Peak Detection Prominence", min_value=1.0, max_value=15.0, value=4.0, step=0.5)
@@ -196,7 +229,10 @@ if technique.startswith("1"):
             step_offset=step_offset,
             sg_window=sg_window,
             sg_poly=sg_poly,
-            prominence=prominence
+            prominence=prominence,
+            mode=ftir_mode,
+            normalization=norm_mode,
+            theme=selected_theme
         )
         st.pyplot(fig_ftir)
 
@@ -204,44 +240,38 @@ if technique.startswith("1"):
             peak_rows = []
             for smp, p_list in peaks_dict.items():
                 peak_rows.append({"Sample": smp, "Detected Bands (cm⁻¹)": ", ".join(map(str, p_list)) if p_list else "None detected"})
-            st.dataframe(pd.DataFrame(peak_rows), use_container_width=True)
+            summary_df = pd.DataFrame(peak_rows)
+            st.dataframe(summary_df, use_container_width=True)
 
-        st.markdown("#### 📥 Publication & LabPlot Export")
+        st.markdown("#### 📥 Publication Export Center")
+        # 1-Click Complete ZIP Package
+        zip_bytes = build_analysis_bundle_zip(
+            fig_ftir,
+            base_name="FTIR_Stacked_Analysis",
+            labplot_df=labplot_ftir_df,
+            summary_data=summary_df,
+            title="FTIR Stacked Spectra with Savitzky-Golay Filtering",
+            units={'Wavenumber_cm-1': 'cm^-1'}
+        )
+        st.download_button(
+            "📦 Download Complete Publication Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Report)",
+            data=zip_bytes,
+            file_name="FTIR_Publication_Package.zip",
+            mime="application/zip"
+        )
+        
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            st.download_button(
-                "Export 600 DPI PNG",
-                data=get_figure_bytes(fig_ftir, 'png', dpi=600),
-                file_name="FTIR_Stacked_600DPI.png",
-                mime="image/png"
-            )
+            st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_ftir, 'png', dpi=600), file_name="FTIR_600DPI.png", mime="image/png")
         with c2:
-            st.download_button(
-                "Export Vector SVG",
-                data=get_figure_bytes(fig_ftir, 'svg'),
-                file_name="FTIR_Stacked.svg",
-                mime="image/svg+xml"
-            )
+            st.download_button("Export Vector SVG", data=get_figure_bytes(fig_ftir, 'svg'), file_name="FTIR.svg", mime="image/svg+xml")
         with c3:
-            st.download_button(
-                "Export Vector PDF",
-                data=get_figure_bytes(fig_ftir, 'pdf'),
-                file_name="FTIR_Stacked.pdf",
-                mime="application/pdf"
-            )
+            st.download_button("Export Vector PDF", data=get_figure_bytes(fig_ftir, 'pdf'), file_name="FTIR.pdf", mime="application/pdf")
         with c4:
-            units = {'Wavenumber': 'cm^-1'}
-            for col in labplot_ftir_df.columns[1:]:
-                units[col] = '%' if 'Raw' in col or 'Smoothed' in col else 'offset a.u.'
-            ascii_bytes = get_labplot_ascii_bytes(
-                labplot_ftir_df,
-                title="FTIR Stacked Spectra with Savitzky-Golay Filtering",
-                units=units
-            )
             st.download_button(
                 "LabPlot ASCII Matrix (.dat)",
-                data=ascii_bytes,
-                file_name="FTIR_Stacked_LabPlot.dat",
+                data=get_labplot_ascii_bytes(labplot_ftir_df, title="FTIR Matrix", units={'Wavenumber_cm-1': 'cm^-1'}),
+                file_name="FTIR_LabPlot.dat",
                 mime="text/plain"
             )
         plt.close(fig_ftir)
@@ -257,9 +287,9 @@ elif technique.startswith("2"):
     
     with col_ctrl:
         st.subheader("Data & Parameters")
-        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload File (Excel / Origin / CSV / DAT / XY / PRN)"], key="xrd_src")
+        data_source = st.radio("Data Source:", ["Benchmark Patterns", "Upload File (Excel / Origin / CSV / DAT / XY)"], key="xrd_src")
         
-        if data_source != "Use Benchmark Data":
+        if data_source != "Benchmark Patterns":
             up_file = st.file_uploader(
                 "Upload File (Col 1: 2θ, Subsequent: Intensity)",
                 type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "xy", "prn", "asc"],
@@ -271,18 +301,19 @@ elif technique.startswith("2"):
                     df_xrd = parsed_df
                     st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
                 else:
-                    st.error("Could not parse numeric columns. Falling back to benchmark.")
+                    st.error("Parsing failed. Using benchmark.")
                     df_xrd = generate_benchmark_xrd_data()
             elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("2"):
                 df_xrd = st.session_state["smart_data"]['df']
             else:
-                st.info("Awaiting file upload. Showing benchmark.")
+                st.info("Awaiting upload. Showing benchmark.")
                 df_xrd = generate_benchmark_xrd_data()
         else:
             default_path = BASE_DIR / "data" / "xrd" / "xrd_data.csv"
             df_xrd = pd.read_csv(default_path) if default_path.exists() else generate_benchmark_xrd_data()
 
-        offset_step = st.slider("Stacking Offset (a.u.)", min_value=100.0, max_value=1200.0, value=500.0, step=50.0)
+        norm_max = st.checkbox("Normalize Intensity to Max Reflection (0 to 100%)", value=False)
+        offset_step = st.slider("Stacking Offset (a.u.)", min_value=50.0, max_value=1200.0, value=500.0, step=50.0)
         fit_min = st.number_input("Fit Window 2θ Min (deg)", value=41.5, step=0.5)
         fit_max = st.number_input("Fit Window 2θ Max (deg)", value=45.0, step=0.5)
         wavelength = st.number_input("X-Ray Wavelength λ (nm)", value=0.15406, format="%.5f")
@@ -294,7 +325,9 @@ elif technique.startswith("2"):
             offset_step=offset_step,
             fit_range=(fit_min, fit_max),
             wavelength_nm=wavelength,
-            k_factor=k_factor
+            k_factor=k_factor,
+            normalize_max=norm_max,
+            theme=selected_theme
         )
         st.pyplot(fig_xrd)
 
@@ -310,44 +343,37 @@ elif technique.startswith("2"):
                     })
                 else:
                     fit_rows.append({"Pattern": smp, "Status": res['Error']})
-            st.dataframe(pd.DataFrame(fit_rows), use_container_width=True)
+            summary_xrd_df = pd.DataFrame(fit_rows)
+            st.dataframe(summary_xrd_df, use_container_width=True)
 
-        st.markdown("#### 📥 Publication & LabPlot Export")
+        st.markdown("#### 📥 Publication Export Center")
+        zip_bytes_xrd = build_analysis_bundle_zip(
+            fig_xrd,
+            base_name="XRD_Stacked_Analysis",
+            labplot_df=labplot_xrd_df,
+            summary_data=summary_xrd_df,
+            title="XRD Diffraction Stacked Patterns with Scherrer Analysis",
+            units={'TwoTheta_deg': 'degrees'}
+        )
+        st.download_button(
+            "📦 Download Complete Publication Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Report)",
+            data=zip_bytes_xrd,
+            file_name="XRD_Publication_Package.zip",
+            mime="application/zip"
+        )
+
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            st.download_button(
-                "Export 600 DPI PNG",
-                data=get_figure_bytes(fig_xrd, 'png', dpi=600),
-                file_name="XRD_Stacked_600DPI.png",
-                mime="image/png"
-            )
+            st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_xrd, 'png', dpi=600), file_name="XRD_600DPI.png", mime="image/png")
         with c2:
-            st.download_button(
-                "Export Vector SVG",
-                data=get_figure_bytes(fig_xrd, 'svg'),
-                file_name="XRD_Stacked.svg",
-                mime="image/svg+xml"
-            )
+            st.download_button("Export Vector SVG", data=get_figure_bytes(fig_xrd, 'svg'), file_name="XRD.svg", mime="image/svg+xml")
         with c3:
-            st.download_button(
-                "Export Vector PDF",
-                data=get_figure_bytes(fig_xrd, 'pdf'),
-                file_name="XRD_Stacked.pdf",
-                mime="application/pdf"
-            )
+            st.download_button("Export Vector PDF", data=get_figure_bytes(fig_xrd, 'pdf'), file_name="XRD.pdf", mime="application/pdf")
         with c4:
-            units = {'TwoTheta_deg': 'degrees'}
-            for col in labplot_xrd_df.columns[1:]:
-                units[col] = 'Counts'
-            ascii_bytes = get_labplot_ascii_bytes(
-                labplot_xrd_df,
-                title="XRD Diffraction Stacked Patterns with Scherrer Analysis",
-                units=units
-            )
             st.download_button(
                 "LabPlot ASCII Matrix (.dat)",
-                data=ascii_bytes,
-                file_name="XRD_Stacked_LabPlot.dat",
+                data=get_labplot_ascii_bytes(labplot_xrd_df, title="XRD Matrix", units={'TwoTheta_deg': 'degrees'}),
+                file_name="XRD_LabPlot.dat",
                 mime="text/plain"
             )
         plt.close(fig_xrd)
@@ -357,15 +383,15 @@ elif technique.startswith("2"):
 # ==============================================================================
 elif technique.startswith("3"):
     st.markdown('<div class="main-header">UV-Vis Spectroscopy & Photodegradation Kinetics</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Spectral evolution monitoring, pseudo-first-order (ln(C₀/C_t) = k_app·t) & pseudo-second-order fitting.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Spectral evolution monitoring, multi-order kinetic regression (0th, 1st, 2nd order), and rate constant determination.</div>', unsafe_allow_html=True)
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
     with col_ctrl:
         st.subheader("Data & Parameters")
-        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload File (Excel / Origin / CSV / DAT)"], key="uv_src")
+        data_source = st.radio("Data Source:", ["Benchmark Spectra", "Upload File (Excel / Origin / CSV / DAT)"], key="uv_src")
         
-        if data_source != "Use Benchmark Data":
+        if data_source != "Benchmark Spectra":
             up_file = st.file_uploader(
                 "Upload File (Col 1: Wavelength, Subsequent: Time Traces)",
                 type=["csv", "xlsx", "xls", "txt", "dat", "tsv"],
@@ -377,12 +403,12 @@ elif technique.startswith("3"):
                     df_uv = parsed_df
                     st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
                 else:
-                    st.error("Could not parse numeric columns. Falling back to benchmark.")
+                    st.error("Parsing failed. Using benchmark.")
                     df_uv, _ = generate_benchmark_uv_vis_data()
             elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("3"):
                 df_uv = st.session_state["smart_data"]['df']
             else:
-                st.info("Awaiting file upload. Showing benchmark.")
+                st.info("Awaiting upload. Showing benchmark.")
                 df_uv, _ = generate_benchmark_uv_vis_data()
         else:
             default_path = BASE_DIR / "data" / "uv_vis" / "uv_vis_spectra.csv"
@@ -395,57 +421,47 @@ elif technique.startswith("3"):
         fig_uv, axes_uv, uv_metrics, labplot_spectra, labplot_kinetics = process_and_plot_uv_vis(
             df_uv,
             lambda_target=target_lambda,
-            initial_conc=c0_initial
+            initial_conc=c0_initial,
+            theme=selected_theme
         )
         st.pyplot(fig_uv)
 
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("λ_max Monitored", f"{uv_metrics['lambda_max_nm']} nm")
-        m2.metric("k_app (PFO)", f"{uv_metrics['k_pseudo_first_order_min-1']:.4f} min⁻¹", f"R² = {uv_metrics['R2_pseudo_first_order']:.4f}")
-        m3.metric("k₂ (PSO)", f"{uv_metrics['k_pseudo_second_order']:.5f}", f"R² = {uv_metrics['R2_pseudo_second_order']:.4f}")
+        m2.metric("Best Fit Model", f"{uv_metrics['best_kinetic_model']}")
+        m3.metric("k_app (PFO)", f"{uv_metrics['k_pseudo_first_order_min-1']:.4f} min⁻¹", f"R² = {uv_metrics['R2_pseudo_first_order']:.4f}")
         m4.metric("Degradation Efficiency", f"{uv_metrics['final_degradation_pct']:.1f}%")
 
-        with st.expander("📊 Detailed Degradation Kinetics Table", expanded=False):
+        with st.expander("📊 Multi-Order Kinetics Table (0th, 1st, 2nd Order)", expanded=False):
             st.dataframe(labplot_kinetics, use_container_width=True)
 
-        st.markdown("#### 📥 Publication & LabPlot Export")
+        st.markdown("#### 📥 Publication Export Center")
+        zip_bytes_uv = build_analysis_bundle_zip(
+            fig_uv,
+            base_name="UV_Vis_Photodegradation_Kinetics",
+            labplot_df=labplot_kinetics,
+            summary_data=uv_metrics,
+            title="Photodegradation Kinetics Data and Fits"
+        )
+        st.download_button(
+            "📦 Download Complete Publication Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Report)",
+            data=zip_bytes_uv,
+            file_name="UV_Vis_Kinetics_Package.zip",
+            mime="application/zip"
+        )
+
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            st.download_button(
-                "Export 600 DPI PNG",
-                data=get_figure_bytes(fig_uv, 'png', dpi=600),
-                file_name="UV_Vis_Kinetics_600DPI.png",
-                mime="image/png"
-            )
+            st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_uv, 'png', dpi=600), file_name="UV_Vis_600DPI.png", mime="image/png")
         with c2:
-            st.download_button(
-                "Export Vector SVG",
-                data=get_figure_bytes(fig_uv, 'svg'),
-                file_name="UV_Vis_Kinetics.svg",
-                mime="image/svg+xml"
-            )
+            st.download_button("Export Vector SVG", data=get_figure_bytes(fig_uv, 'svg'), file_name="UV_Vis.svg", mime="image/svg+xml")
         with c3:
-            st.download_button(
-                "Export Vector PDF",
-                data=get_figure_bytes(fig_uv, 'pdf'),
-                file_name="UV_Vis_Kinetics.pdf",
-                mime="application/pdf"
-            )
+            st.download_button("Export Vector PDF", data=get_figure_bytes(fig_uv, 'pdf'), file_name="UV_Vis.pdf", mime="application/pdf")
         with c4:
-            units_k = {
-                'Time_min': 'min', 'Absorbance_lambda_max': 'a.u.', 'Ct_over_C0': 'dimensionless',
-                'Concentration_mg_L': 'mg/L', 'Degradation_Efficiency_pct': '%', 'ln_C0_Ct': 'dimensionless',
-                'Pseudo_First_Order_Fit': 'dimensionless', 'Inv_Ct_minus_Inv_C0': 'L/mg', 'Pseudo_Second_Order_Fit': 'L/mg'
-            }
-            ascii_bytes = get_labplot_ascii_bytes(
-                labplot_kinetics,
-                title="Dye Photodegradation Kinetics Data and Fits",
-                units=units_k
-            )
             st.download_button(
                 "LabPlot ASCII Matrix (.dat)",
-                data=ascii_bytes,
-                file_name="Photodegradation_Kinetics_LabPlot.dat",
+                data=get_labplot_ascii_bytes(labplot_kinetics, title="Kinetics Matrix"),
+                file_name="Kinetics_LabPlot.dat",
                 mime="text/plain"
             )
         plt.close(fig_uv)
@@ -461,9 +477,9 @@ elif technique.startswith("4"):
     
     with col_ctrl:
         st.subheader("Data & Fitting Settings")
-        data_source = st.radio("Source:", ["Use Benchmark Data", "Upload File (Excel / Origin / CSV / DAT)"], key="xps_src")
+        data_source = st.radio("Data Source:", ["Benchmark C 1s Core", "Upload File (Excel / Origin / CSV / DAT)"], key="xps_src")
         
-        if data_source != "Use Benchmark Data":
+        if data_source != "Benchmark C 1s Core":
             up_file = st.file_uploader(
                 "Upload File (Col 1: Binding Energy eV, Col 2: Counts/s)",
                 type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "asc"],
@@ -475,12 +491,12 @@ elif technique.startswith("4"):
                     df_xps = parsed_df
                     st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
                 else:
-                    st.error("Could not parse numeric columns. Falling back to benchmark.")
+                    st.error("Parsing failed. Using benchmark.")
                     df_xps = generate_benchmark_xps_data()
             elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("4"):
                 df_xps = st.session_state["smart_data"]['df']
             else:
-                st.info("Awaiting file upload. Showing benchmark.")
+                st.info("Awaiting upload. Showing benchmark.")
                 df_xps = generate_benchmark_xps_data()
         else:
             default_path = BASE_DIR / "data" / "xps" / "c1s_high_res.csv"
@@ -493,7 +509,8 @@ elif technique.startswith("4"):
         fig_xps, summary_xps, labplot_xps_df = deconvolve_xps(
             df_xps,
             c1s_calibration=apply_c1s,
-            expected_ref_be=ref_be
+            expected_ref_be=ref_be,
+            theme=selected_theme
         )
         st.pyplot(fig_xps)
 
@@ -502,45 +519,38 @@ elif technique.startswith("4"):
         m2.metric("Fit R²", f"{summary_xps['r_squared']:.4f}")
         m3.metric("Reduced χ²", f"{summary_xps['redchi']:.1f}")
 
+        quant_df = pd.DataFrame(summary_xps['quantification_table'])
         with st.expander("📊 Chemical State Quantification Table (at%)", expanded=True):
-            st.dataframe(pd.DataFrame(summary_xps['quantification_table']), use_container_width=True)
+            st.dataframe(quant_df, use_container_width=True)
 
-        st.markdown("#### 📥 Publication & LabPlot Export")
+        st.markdown("#### 📥 Publication Export Center")
+        zip_bytes_xps = build_analysis_bundle_zip(
+            fig_xps,
+            base_name="XPS_Core_Deconvolution",
+            labplot_df=labplot_xps_df,
+            summary_data=quant_df,
+            title="XPS Core-Level Shirley Deconvolution Matrix",
+            units={'Binding_Energy_eV': 'eV'}
+        )
+        st.download_button(
+            "📦 Download Complete Publication Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Report)",
+            data=zip_bytes_xps,
+            file_name="XPS_Publication_Package.zip",
+            mime="application/zip"
+        )
+
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            st.download_button(
-                "Export 600 DPI PNG",
-                data=get_figure_bytes(fig_xps, 'png', dpi=600),
-                file_name="XPS_Deconvolution_600DPI.png",
-                mime="image/png"
-            )
+            st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_xps, 'png', dpi=600), file_name="XPS_600DPI.png", mime="image/png")
         with c2:
-            st.download_button(
-                "Export Vector SVG",
-                data=get_figure_bytes(fig_xps, 'svg'),
-                file_name="XPS_Deconvolution.svg",
-                mime="image/svg+xml"
-            )
+            st.download_button("Export Vector SVG", data=get_figure_bytes(fig_xps, 'svg'), file_name="XPS.svg", mime="image/svg+xml")
         with c3:
-            st.download_button(
-                "Export Vector PDF",
-                data=get_figure_bytes(fig_xps, 'pdf'),
-                file_name="XPS_Deconvolution.pdf",
-                mime="application/pdf"
-            )
+            st.download_button("Export Vector PDF", data=get_figure_bytes(fig_xps, 'pdf'), file_name="XPS.pdf", mime="application/pdf")
         with c4:
-            units = {'Binding_Energy_eV': 'eV'}
-            for col in labplot_xps_df.columns[1:]:
-                units[col] = 'Counts/s'
-            ascii_bytes = get_labplot_ascii_bytes(
-                labplot_xps_df,
-                title="XPS Core-Level Shirley Deconvolution Matrix",
-                units=units
-            )
             st.download_button(
                 "LabPlot ASCII Matrix (.dat)",
-                data=ascii_bytes,
-                file_name="XPS_Deconvolution_LabPlot.dat",
+                data=get_labplot_ascii_bytes(labplot_xps_df, title="XPS Matrix", units={'Binding_Energy_eV': 'eV'}),
+                file_name="XPS_LabPlot.dat",
                 mime="text/plain"
             )
         plt.close(fig_xps)
@@ -579,12 +589,15 @@ elif technique.startswith("5"):
 
             nm_per_px = st.number_input("Scale (nm / pixel)", value=2.5, min_value=0.1, step=0.5)
             min_area = st.slider("Min Particle Area (pixels)", min_value=5, max_value=100, value=25, step=5)
+            min_circ = st.slider("Min Circularity Threshold", min_value=0.1, max_value=0.9, value=0.2, step=0.05)
 
         with col_view:
             fig_sem, stats_sem, df_particles = analyze_sem_micrograph(
                 sem_img,
                 scale_nm_per_pixel=nm_per_px,
-                min_area_px=min_area
+                min_area_px=min_area,
+                min_circularity=min_circ,
+                theme=selected_theme
             )
             st.pyplot(fig_sem)
 
@@ -594,40 +607,33 @@ elif technique.startswith("5"):
             s3.metric("Median (D50)", f"{stats_sem['Median_Diameter_nm']} nm")
             s4.metric("D10 / D90 Span", f"{stats_sem['D10_nm']} / {stats_sem['D90_nm']} nm")
 
-            st.markdown("#### 📥 SEM Publication & LabPlot Export")
+            st.markdown("#### 📥 Publication Export Center")
+            zip_bytes_sem = build_analysis_bundle_zip(
+                fig_sem,
+                base_name="SEM_Particle_Sizing",
+                labplot_df=df_particles,
+                summary_data=df_particles,
+                title="SEM Particle Morphological Sizing and Area Distribution"
+            )
+            st.download_button(
+                "📦 Download Complete SEM Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Particle Data)",
+                data=zip_bytes_sem,
+                file_name="SEM_Publication_Package.zip",
+                mime="application/zip"
+            )
+
             c1, c2, c3, c4 = st.columns(4)
             with c1:
-                st.download_button(
-                    "Export 600 DPI PNG",
-                    data=get_figure_bytes(fig_sem, 'png', dpi=600),
-                    file_name="SEM_Particle_Sizing_600DPI.png",
-                    mime="image/png"
-                )
+                st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_sem, 'png', dpi=600), file_name="SEM_600DPI.png", mime="image/png")
             with c2:
-                st.download_button(
-                    "Export Vector SVG",
-                    data=get_figure_bytes(fig_sem, 'svg'),
-                    file_name="SEM_Particle_Sizing.svg",
-                    mime="image/svg+xml"
-                )
+                st.download_button("Export Vector SVG", data=get_figure_bytes(fig_sem, 'svg'), file_name="SEM.svg", mime="image/svg+xml")
             with c3:
-                st.download_button(
-                    "Export Vector PDF",
-                    data=get_figure_bytes(fig_sem, 'pdf'),
-                    file_name="SEM_Particle_Sizing.pdf",
-                    mime="application/pdf"
-                )
+                st.download_button("Export Vector PDF", data=get_figure_bytes(fig_sem, 'pdf'), file_name="SEM.pdf", mime="application/pdf")
             with c4:
-                units = {'Particle_ID': '#', 'Area_px': 'px^2', 'Diameter_nm': 'nm', 'Circularity': 'dimensionless', 'Centroid_Y': 'px', 'Centroid_X': 'px'}
-                ascii_bytes = get_labplot_ascii_bytes(
-                    df_particles,
-                    title="SEM Particle Morphological Sizing and Area Distribution",
-                    units=units
-                )
                 st.download_button(
                     "LabPlot ASCII Matrix (.dat)",
-                    data=ascii_bytes,
-                    file_name="SEM_Particle_Sizing_LabPlot.dat",
+                    data=get_labplot_ascii_bytes(df_particles, title="SEM Matrix"),
+                    file_name="SEM_LabPlot.dat",
                     mime="text/plain"
                 )
             plt.close(fig_sem)
@@ -649,12 +655,12 @@ elif technique.startswith("5"):
                         df_edx = parsed_df
                         st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
                     else:
-                        st.error("Could not parse numeric columns. Falling back to benchmark.")
+                        st.error("Parsing failed. Using benchmark.")
                         df_edx = generate_benchmark_edx_data()
                 elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("5"):
                     df_edx = st.session_state["smart_data"]['df']
                 else:
-                    st.info("Awaiting EDX upload. Showing benchmark.")
+                    st.info("Awaiting upload. Showing benchmark.")
                     df_edx = generate_benchmark_edx_data()
             else:
                 default_path = BASE_DIR / "data" / "sem_edx" / "edx_spectrum.csv"
@@ -667,49 +673,43 @@ elif technique.startswith("5"):
             fig_edx, res_edx, labplot_edx = analyze_edx_spectrum(
                 df_edx,
                 prominence=prominence_edx,
-                peak_tolerance_keV=tol_edx
+                peak_tolerance_keV=tol_edx,
+                theme=selected_theme
             )
             st.pyplot(fig_edx)
 
+            quant_edx_df = pd.DataFrame(res_edx['quantification'])
             with st.expander("📊 Elemental Quantification (wt% and at%)", expanded=True):
-                st.dataframe(pd.DataFrame(res_edx['quantification']), use_container_width=True)
+                st.dataframe(quant_edx_df, use_container_width=True)
 
-            st.markdown("#### 📥 EDX Publication & LabPlot Export")
+            st.markdown("#### 📥 Publication Export Center")
+            zip_bytes_edx = build_analysis_bundle_zip(
+                fig_edx,
+                base_name="EDX_Elemental_Quantification",
+                labplot_df=labplot_edx,
+                summary_data=quant_edx_df,
+                title="EDX Spectrum and Composition Table"
+            )
+            st.download_button(
+                "📦 Download Complete EDX Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Report)",
+                data=zip_bytes_edx,
+                file_name="EDX_Publication_Package.zip",
+                mime="application/zip",
+                key="edx_zip"
+            )
+
             c1, c2, c3, c4 = st.columns(4)
             with c1:
-                st.download_button(
-                    "Export 600 DPI PNG",
-                    data=get_figure_bytes(fig_edx, 'png', dpi=600),
-                    file_name="EDX_Spectrum_600DPI.png",
-                    mime="image/png",
-                    key="edx_png"
-                )
+                st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_edx, 'png', dpi=600), file_name="EDX_600DPI.png", mime="image/png", key="edx_png")
             with c2:
-                st.download_button(
-                    "Export Vector SVG",
-                    data=get_figure_bytes(fig_edx, 'svg'),
-                    file_name="EDX_Spectrum.svg",
-                    mime="image/svg+xml",
-                    key="edx_svg"
-                )
+                st.download_button("Export Vector SVG", data=get_figure_bytes(fig_edx, 'svg'), file_name="EDX.svg", mime="image/svg+xml", key="edx_svg")
             with c3:
-                st.download_button(
-                    "Export Vector PDF",
-                    data=get_figure_bytes(fig_edx, 'pdf'),
-                    file_name="EDX_Spectrum.pdf",
-                    mime="application/pdf",
-                    key="edx_pdf"
-                )
+                st.download_button("Export Vector PDF", data=get_figure_bytes(fig_edx, 'pdf'), file_name="EDX.pdf", mime="application/pdf", key="edx_pdf")
             with c4:
-                ascii_bytes = get_labplot_ascii_bytes(
-                    labplot_edx,
-                    title="Energy-Dispersive X-Ray Spectroscopy (EDX) Spectrum",
-                    units={'Energy_keV': 'keV', 'Counts': 'Counts'}
-                )
                 st.download_button(
                     "LabPlot ASCII Matrix (.dat)",
-                    data=ascii_bytes,
-                    file_name="EDX_Spectrum_LabPlot.dat",
+                    data=get_labplot_ascii_bytes(labplot_edx, title="EDX Matrix"),
+                    file_name="EDX_LabPlot.dat",
                     mime="text/plain",
                     key="edx_dat"
                 )

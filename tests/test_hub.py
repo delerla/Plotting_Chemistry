@@ -1,0 +1,149 @@
+"""
+test_hub.py - Comprehensive Unit & Integration Test Suite for Materials Characterization Hub.
+Tests all 5 analytical protocols, universal smart parser, and export bundles.
+"""
+
+import sys
+from pathlib import Path
+
+# Ensure root is in sys.path
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+import numpy as np
+import pandas as pd
+
+from modules.export_utils import build_analysis_bundle_zip, export_labplot_ascii
+from modules.file_parser import load_smart_file
+from modules.ftir_module import generate_benchmark_ftir_data, process_and_plot_ftir
+from modules.xrd_module import generate_benchmark_xrd_data, process_and_plot_xrd, scherrer_size
+from modules.uv_vis_module import generate_benchmark_uv_vis_data, process_and_plot_uv_vis
+from modules.xps_module import calculate_shirley_baseline, deconvolve_xps, generate_benchmark_xps_data
+from modules.sem_edx_module import (
+    analyze_edx_spectrum,
+    analyze_sem_micrograph,
+    generate_benchmark_edx_data,
+    generate_benchmark_sem_image
+)
+
+
+def test_file_parser_auto_detection():
+    """Verifies that all analytical techniques are detected accurately."""
+    df_ftir, _, meta_ftir = load_smart_file(BASE_DIR / 'data' / 'ftir' / 'ftir_data.csv')
+    assert meta_ftir['detected_technique'] == '1. FTIR Spectroscopy'
+    assert meta_ftir['confidence'] >= 0.85
+
+    df_xrd, _, meta_xrd = load_smart_file(BASE_DIR / 'data' / 'xrd' / 'xrd_data.csv')
+    assert meta_xrd['detected_technique'] == '2. XRD Crystallography'
+    assert meta_xrd['confidence'] >= 0.85
+
+    df_uv, _, meta_uv = load_smart_file(BASE_DIR / 'data' / 'uv_vis' / 'uv_vis_spectra.csv')
+    assert meta_uv['detected_technique'] == '3. UV-Vis & Dye Kinetics'
+    assert meta_uv['confidence'] >= 0.85
+
+    df_xps, _, meta_xps = load_smart_file(BASE_DIR / 'data' / 'xps' / 'c1s_high_res.csv')
+    assert meta_xps['detected_technique'] == '4. XPS Core Deconvolution'
+    assert meta_xps['confidence'] >= 0.80
+
+    df_edx, _, meta_edx = load_smart_file(BASE_DIR / 'data' / 'sem_edx' / 'edx_spectrum.csv')
+    assert meta_edx['detected_technique'] == '5. SEM & EDX Microanalysis'
+
+    _, img_sem, meta_sem = load_smart_file(BASE_DIR / 'data' / 'sem_edx' / 'sem_micrograph.png')
+    assert 'SEM' in meta_sem['detected_technique']
+    assert img_sem is not None
+
+
+def test_ftir_pipeline():
+    """Tests FTIR spectral stacking, Savitzky-Golay filtering, and peak detection."""
+    df = generate_benchmark_ftir_data()
+    fig, ax, peaks_dict, labplot_df = process_and_plot_ftir(df, step_offset=30.0, mode="Transmittance (%T)")
+    assert fig is not None
+    assert len(peaks_dict) == 4
+    # Pristine polymer should show nitrile band at ~2246 cm^-1
+    pristine_peaks = peaks_dict['Pristine Polymer']
+    assert any(2240 <= p <= 2255 for p in pristine_peaks)
+    assert 'Wavenumber_cm-1' in labplot_df.columns
+
+
+def test_xrd_scherrer():
+    """Tests Scherrer equation crystallite size formula and Lorentzian profile fitting."""
+    d_size = scherrer_size(fwhm_deg=0.42, two_theta_deg=43.2, wavelength_nm=0.15406, k=0.9)
+    assert 18.0 <= d_size <= 22.0
+
+    df = generate_benchmark_xrd_data()
+    fig, ax, fit_results, labplot_df = process_and_plot_xrd(df, offset_step=400.0)
+    assert fig is not None
+    assert 'Pristine' in fit_results
+    assert fit_results['Pristine']['Crystallite_Size_nm'] > 15.0
+
+
+def test_uv_vis_kinetics():
+    """Tests multi-order photodegradation kinetics and model ranking."""
+    df_spectra, _ = generate_benchmark_uv_vis_data()
+    fig, axes, metrics, _, labplot_kinetics = process_and_plot_uv_vis(df_spectra, lambda_target=554.0)
+    assert fig is not None
+    assert metrics['lambda_max_nm'] == 554.0
+    assert metrics['R2_pseudo_first_order'] > 0.98
+    assert metrics['final_degradation_pct'] > 80.0
+    assert 'ln_C0_Ct' in labplot_kinetics.columns
+
+
+def test_xps_shirley_and_voigt():
+    """Tests iterative Shirley background subtraction and multi-peak Voigt fit."""
+    df = generate_benchmark_xps_data()
+    fig, summary, labplot_df = deconvolve_xps(df, c1s_calibration=True)
+    assert fig is not None
+    assert summary['r_squared'] > 0.98
+    assert len(summary['quantification_table']) == 4
+    # Dominant peak should be C-C / C-H with > 50 at%
+    cc_row = next(r for r in summary['quantification_table'] if 'C-C' in r['Component'])
+    assert cc_row['Atomic_Concentration_pct'] > 50.0
+
+
+def test_sem_edx_microanalysis():
+    """Tests SEM particle segmentation, thresholding, and EDX line matching."""
+    img = generate_benchmark_sem_image()
+    fig_sem, stats_sem, df_particles = analyze_sem_micrograph(img, scale_nm_per_pixel=2.5)
+    assert stats_sem['Total_Count'] > 30
+    assert stats_sem['Mean_Diameter_nm'] > 20.0
+
+    df_edx = generate_benchmark_edx_data()
+    fig_edx, res_edx, labplot_edx = analyze_edx_spectrum(df_edx)
+    elements = [r['Element'] for r in res_edx['quantification']]
+    assert 'Si' in elements or 'Cu' in elements or 'Ni' in elements
+
+
+def test_zip_bundle_export():
+    """Tests generation of complete analysis package ZIP bundle."""
+    df_ftir = generate_benchmark_ftir_data()
+    fig, ax, peaks, labplot_df = process_and_plot_ftir(df_ftir)
+    zip_bytes = build_analysis_bundle_zip(
+        fig,
+        base_name="Test_FTIR",
+        labplot_df=labplot_df,
+        summary_data=pd.DataFrame([{'Sample': 'A', 'Peak': 2246}])
+    )
+    assert len(zip_bytes) > 1000
+    assert zip_bytes[:2] == b'PK'  # ZIP magic bytes
+
+
+if __name__ == '__main__':
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    print("[RUNNING TEST SUITE]")
+    test_file_parser_auto_detection()
+    print("  [PASS] Smart Ingestion & Technique Auto-Detection")
+    test_ftir_pipeline()
+    print("  [PASS] FTIR Spectroscopy Engine")
+    test_xrd_scherrer()
+    print("  [PASS] XRD Crystallography & Scherrer Sizing")
+    test_uv_vis_kinetics()
+    print("  [PASS] UV-Vis Photodegradation Kinetics")
+    test_xps_shirley_and_voigt()
+    print("  [PASS] XPS Shirley Baseline & Voigt Deconvolution")
+    test_sem_edx_microanalysis()
+    print("  [PASS] SEM Particle Sizing & EDX Microanalysis")
+    test_zip_bundle_export()
+    print("  [PASS] ZIP Package & LabPlot ASCII Matrix Bundling")
+    print("\n[ALL 7 TESTS PASSED SUCCESSFULLY!]")
