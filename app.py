@@ -55,15 +55,15 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     .main-header {
-        font-size: 2.1rem;
+        font-size: 1.85rem;
         font-weight: 700;
         color: #0f2b48;
         margin-bottom: 0.15rem;
         letter-spacing: -0.02em;
     }
     .sub-header {
-        font-size: 1.0rem;
-        color: #555555;
+        font-size: 0.95rem;
+        color: #475569;
         margin-bottom: 1.2rem;
     }
     .smart-card {
@@ -73,6 +73,39 @@ st.markdown("""
         padding: 0.85rem 1.1rem;
         border-radius: 6px;
         margin-bottom: 1.2rem;
+    }
+    .profile-card {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #f8fafc;
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 1.2rem;
+        border: 1px solid #334155;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    }
+    .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.73rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        margin-left: 4px;
+    }
+    .badge-blue {
+        background: #e0f2fe;
+        color: #0284c7;
+        border: 1px solid #bae6fd;
+    }
+    .badge-green {
+        background: #dcfce7;
+        color: #16a34a;
+        border: 1px solid #bbf7d0;
+    }
+    .badge-dark {
+        background: #1e293b;
+        color: #f8fafc;
+        border: 1px solid #334155;
     }
     .stDownloadButton button {
         width: 100%;
@@ -109,9 +142,30 @@ if "current_technique" not in st.session_state:
 # SIDEBAR CONTROLS & UNIVERSAL SMART INGESTION
 # ==============================================================================
 with st.sidebar:
-    st.markdown("### 🔬 Materials Characterization")
-    st.caption("Commercial-grade open-source alternative to OriginLab.")
-    
+    st.markdown("""
+    <div class="profile-card">
+        <div style="display: flex; align-items: center; gap: 9px;">
+            <div style="font-size: 1.5rem;">🔬</div>
+            <div>
+                <div style="font-size: 0.70rem; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-weight: 700;">Platform Owner & Lead</div>
+                <div style="font-size: 1.22rem; font-weight: 800; color: #38bdf8; line-height: 1.2;">Deler La</div>
+            </div>
+        </div>
+        <div style="font-size: 0.81rem; color: #cbd5e1; margin-top: 8px; line-height: 1.35;">
+            Materials Chemistry & Computational Spectroscopic Analytics Hub
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 10px;">
+            <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="text-decoration: none; background: #334155; color: #f8fafc; padding: 4px 10px; border-radius: 4px; font-size: 0.74rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                ⭐ GitHub
+            </a>
+            <a href="mailto:delerla@yahoo.de" style="text-decoration: none; background: #0284c7; color: #ffffff; padding: 4px 10px; border-radius: 4px; font-size: 0.74rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                ✉️ Email
+            </a>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### ⚙️ Analytical Settings")
     selected_theme = st.selectbox(
         "🎨 Publication Color Palette:",
         list(PUBLICATION_PALETTES.keys()),
@@ -120,7 +174,7 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.markdown("### ⚡ Smart File Dropzone")
+    st.markdown("### ⚡ Smart Universal Dropzone")
     st.caption("Upload any file (Excel, OriginLab export, CSV, DAT, ASC, DPT, Micrograph):")
     smart_uploaded = st.file_uploader(
         "Drop Any File for Auto-Detection",
@@ -157,7 +211,44 @@ with st.sidebar:
     st.session_state.current_technique = selected_tech
 
     st.markdown("---")
+    with st.expander("📖 Citation & Software Attribution", expanded=False):
+        st.markdown("""
+        If you utilize this hub in academic publications, theses, or research reports, please cite:
+        ```bibtex
+        @software{delerla_materials_hub_2026,
+          author = {Deler La},
+          title = {Automated Materials Characterization and Spectroscopic Analysis Hub},
+          year = {2026},
+          publisher = {GitHub},
+          url = {https://github.com/delerla/Plotting_Chemistry}
+        }
+        ```
+        **Lead Author:** Deler La  
+        **Contact:** [delerla@yahoo.de](mailto:delerla@yahoo.de)  
+        **License:** MIT Open-Source
+        """)
     st.caption("LabPlot ASCII (.dat), 600 DPI PNG, Vector SVG & PDF exports enabled.")
+
+# ==============================================================================
+# GLOBAL BRANDING & HEADER BANNER
+# ==============================================================================
+st.markdown("""
+<div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 10px;">
+    <div>
+        <h1 style="margin: 0; padding: 0; font-size: 1.95rem; font-weight: 800; color: #0f2b48; letter-spacing: -0.02em;">
+            🔬 Materials Characterization & Spectroscopic Hub
+        </h1>
+        <div style="font-size: 0.90rem; color: #475569; margin-top: 3px;">
+            Open-source, publication-grade analytical suite for XRD, FTIR, UV-Vis, XPS & SEM/EDX.
+        </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+        <span class="badge badge-dark">Lead: Deler La</span>
+        <span class="badge badge-blue">v2.1 Pro</span>
+        <span class="badge badge-green">MIT License</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # Smart Ingestion Notification Banner
 if "smart_data" in st.session_state:
@@ -740,3 +831,17 @@ elif technique.startswith("5"):
                     key="edx_dat"
                 )
             plt.close(fig_edx)
+
+# ==============================================================================
+# GLOBAL SCIENTIFIC FOOTER
+# ==============================================================================
+st.markdown("""
+<div style="margin-top: 4.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.84rem; line-height: 1.65;">
+    <strong>Materials Characterization & Spectroscopic Analysis Hub</strong> • Open-Source Scientific Suite<br>
+    Engineered & Maintained by <strong>Deler La</strong> • 
+    <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="color: #0284c7; text-decoration: none; font-weight: 600;">GitHub Repository</a> • 
+    <a href="https://github.com/delerla/Plotting_Chemistry/issues" target="_blank" style="color: #0284c7; text-decoration: none; font-weight: 600;">Report Bug / Feature Request</a> • 
+    <a href="mailto:delerla@yahoo.de" style="color: #0284c7; text-decoration: none; font-weight: 600;">Contact: delerla@yahoo.de</a><br>
+    <small style="color: #94a3b8;">Publication outputs calibrated to 600 DPI (Nature, Science, ACS, RSC, Monochrome) & LabPlot ASCII interoperability. © 2026 Deler La (MIT License).</small>
+</div>
+""", unsafe_allow_html=True)
