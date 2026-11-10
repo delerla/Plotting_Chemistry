@@ -19,7 +19,8 @@ The entire repository uses **relative paths** and isolated environment scripts. 
 
 | 1-Click Launcher | Description |
 |---|---|
-| **`run_gui.bat`** | **Double-click to start.** Auto-checks dependencies, activates `.venv` (or creates/installs if missing), and opens the interactive GUI in your browser. |
+| **`run_gui.bat`** | **Double-click to start.** Auto-checks dependencies, activates `.venv` (or creates/installs if missing), and opens the interactive multi-technique GUI in your browser. |
+| **`run_xps_studio.bat`** | **Dedicated XPS Intelligence Studio.** Launches the specialized XPS platform with domain models for MOFs, Solar Perovskites, and PAN Nanofibers. |
 | **`setup_environment.bat`** | Optional: sets up an isolated Python virtual environment (`.venv`) and installs all scientific packages cleanly. |
 | **`run_all_scripts.bat`** | Double-click to execute all 5 analytical modules headlessly and generate all publication graphics and LabPlot matrices. |
 | **`sync_github.bat`** / **`.ps1`** | Synchronize local modifications with your GitHub repository in 1 click. |

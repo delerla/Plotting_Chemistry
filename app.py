@@ -590,6 +590,14 @@ elif technique.startswith("4"):
     st.markdown('<div class="main-header">X-Ray Photoelectron Spectroscopy (XPS) Deconvolution</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Iterative Shirley baseline subtraction, C 1s charge referencing (284.8 eV), and non-linear multi-peak Voigt profile fitting via lmfit.</div>', unsafe_allow_html=True)
 
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 1.2rem;">
+        <strong>⚡ Dedicated Deep-Intelligence Platform Available:</strong> 
+        Need domain-specific deconvolution for <b>MOFs</b> (UiO-66, ZIF-8, HKUST-1 defect analysis), <b>Solar Perovskites</b> (Pb⁰ photolysis defect detection, I/Pb ratios), or <b>PAN Nanofibers</b> (Cyclization Index)?<br>
+        <small style="color: #15803d;">Launch the dedicated <b>XPS Studio</b> locally via <code>run_xps_studio.bat</code> or run <code>streamlit run xps_studio/app_xps.py</code>.</small>
+    </div>
+    """, unsafe_allow_html=True)
+
     col_ctrl, col_view = st.columns([1, 2.5])
     
     with col_ctrl:
