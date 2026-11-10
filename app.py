@@ -148,7 +148,7 @@ with st.sidebar:
             <div style="font-size: 1.5rem;">🔬</div>
             <div>
                 <div style="font-size: 0.70rem; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-weight: 700;">Platform Owner & Lead</div>
-                <div style="font-size: 1.22rem; font-weight: 800; color: #38bdf8; line-height: 1.2;">Deler La</div>
+                <div style="font-size: 1.22rem; font-weight: 800; color: #38bdf8; line-height: 1.2;">Dr. Deler Langenberg</div>
             </div>
         </div>
         <div style="font-size: 0.81rem; color: #cbd5e1; margin-top: 8px; line-height: 1.35;">
@@ -215,15 +215,15 @@ with st.sidebar:
         st.markdown("""
         If you utilize this hub in academic publications, theses, or research reports, please cite:
         ```bibtex
-        @software{delerla_materials_hub_2026,
-          author = {Deler La},
+        @software{langenberg_materials_hub_2026,
+          author = {Dr. Deler Langenberg},
           title = {Automated Materials Characterization and Spectroscopic Analysis Hub},
           year = {2026},
           publisher = {GitHub},
           url = {https://github.com/delerla/Plotting_Chemistry}
         }
         ```
-        **Lead Author:** Deler La  
+        **Lead Author:** Dr. Deler Langenberg  
         **Contact:** [delerla@yahoo.de](mailto:delerla@yahoo.de)  
         **License:** MIT Open-Source
         """)
@@ -243,7 +243,7 @@ st.markdown("""
         </div>
     </div>
     <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-        <span class="badge badge-dark">Lead: Deler La</span>
+        <span class="badge badge-dark">Lead: Dr. Deler Langenberg</span>
         <span class="badge badge-blue">v2.1 Pro</span>
         <span class="badge badge-green">MIT License</span>
     </div>
@@ -838,10 +838,10 @@ elif technique.startswith("5"):
 st.markdown("""
 <div style="margin-top: 4.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.84rem; line-height: 1.65;">
     <strong>Materials Characterization & Spectroscopic Analysis Hub</strong> • Open-Source Scientific Suite<br>
-    Engineered & Maintained by <strong>Deler La</strong> • 
+    Engineered & Maintained by <strong>Dr. Deler Langenberg</strong> • 
     <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="color: #0284c7; text-decoration: none; font-weight: 600;">GitHub Repository</a> • 
     <a href="https://github.com/delerla/Plotting_Chemistry/issues" target="_blank" style="color: #0284c7; text-decoration: none; font-weight: 600;">Report Bug / Feature Request</a> • 
     <a href="mailto:delerla@yahoo.de" style="color: #0284c7; text-decoration: none; font-weight: 600;">Contact: delerla@yahoo.de</a><br>
-    <small style="color: #94a3b8;">Publication outputs calibrated to 600 DPI (Nature, Science, ACS, RSC, Monochrome) & LabPlot ASCII interoperability. © 2026 Deler La (MIT License).</small>
+    <small style="color: #94a3b8;">Publication outputs calibrated to 600 DPI (Nature, Science, ACS, RSC, Monochrome) & LabPlot ASCII interoperability. © 2026 Dr. Deler Langenberg (MIT License).</small>
 </div>
 """, unsafe_allow_html=True)
