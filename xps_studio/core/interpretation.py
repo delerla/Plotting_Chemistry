@@ -10,7 +10,10 @@ Translates deconvolution peak areas into material-specific chemical physics insi
 
 from typing import Dict, List, Any, Optional
 import numpy as np
-from ..knowledge_base.scofield_rsf import get_rsf
+try:
+    from knowledge_base.scofield_rsf import get_rsf
+except ImportError:
+    from ..knowledge_base.scofield_rsf import get_rsf
 
 
 def interpret_xps_chemistry(
