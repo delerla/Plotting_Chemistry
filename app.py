@@ -216,6 +216,19 @@ if technique.startswith("1"):
             default_path = BASE_DIR / "data" / "ftir" / "ftir_data.csv"
             df_ftir = pd.read_csv(default_path) if default_path.exists() else generate_benchmark_ftir_data()
 
+        if df_ftir is not None and not df_ftir.empty and df_ftir.shape[1] > 1:
+            all_ftir_cols = list(df_ftir.columns)
+            def_idx = 0
+            for i, c in enumerate(all_ftir_cols):
+                if any(k in str(c).lower() for k in ['wavenumber', 'cm-1', 'cm^-1']):
+                    def_idx = i
+                    break
+            col_x_ftir = st.selectbox("Wavenumber (X-Axis):", all_ftir_cols, index=def_idx, key="ftir_col_x")
+            avail_ftir = [c for c in all_ftir_cols if c != col_x_ftir]
+            sel_ftir = st.multiselect("Spectra to Display:", avail_ftir, default=avail_ftir, key="ftir_col_y")
+            if sel_ftir:
+                df_ftir = df_ftir[[col_x_ftir] + sel_ftir]
+
         ftir_mode = st.selectbox("Display Mode:", ["Transmittance (%T)", "Absorbance (A = -log10 T)"])
         norm_mode = st.selectbox("Normalization:", ["None", "Min-Max (0 to 1)", "Zero Baseline"])
         step_offset = st.slider("Stacking Offset", min_value=0.0, max_value=80.0, value=35.0, step=5.0)
@@ -311,6 +324,19 @@ elif technique.startswith("2"):
         else:
             default_path = BASE_DIR / "data" / "xrd" / "xrd_data.csv"
             df_xrd = pd.read_csv(default_path) if default_path.exists() else generate_benchmark_xrd_data()
+
+        if df_xrd is not None and not df_xrd.empty and df_xrd.shape[1] > 1:
+            all_xrd_cols = list(df_xrd.columns)
+            def_idx = 0
+            for i, c in enumerate(all_xrd_cols):
+                if any(k in str(c).lower() for k in ['2θ', '2theta', 'theta', 'degree', 'angle', 'two_theta', 'two theta']):
+                    def_idx = i
+                    break
+            col_x_xrd = st.selectbox("2θ Angle (X-Axis):", all_xrd_cols, index=def_idx, key="xrd_col_x")
+            avail_xrd = [c for c in all_xrd_cols if c != col_x_xrd]
+            sel_xrd = st.multiselect("Active Samples to Display:", avail_xrd, default=avail_xrd, key="xrd_col_y")
+            if sel_xrd:
+                df_xrd = df_xrd[[col_x_xrd] + sel_xrd]
 
         norm_max = st.checkbox("Normalize Intensity to Max Reflection (0 to 100%)", value=False)
         offset_step = st.slider("Stacking Offset (a.u.)", min_value=50.0, max_value=1200.0, value=500.0, step=50.0)

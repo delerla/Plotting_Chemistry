@@ -50,6 +50,11 @@ def process_and_plot_ftir(
     Advanced FTIR stacking with Savitzky-Golay filtering, mode toggling, normalization,
     and automatic vibrational peak annotation.
     """
+    from modules.file_parser import sanitize_spectral_dataframe
+    df = sanitize_spectral_dataframe(df)
+    if df.empty or df.shape[1] < 2:
+        df = generate_benchmark_ftir_data()
+
     set_publication_style()
     palette = PUBLICATION_PALETTES.get(theme, PUBLICATION_PALETTES['ACS'])
     

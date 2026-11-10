@@ -128,6 +128,26 @@ def test_zip_bundle_export():
     assert zip_bytes[:2] == b'PK'  # ZIP magic bytes
 
 
+def test_ragged_csv_and_nan_tolerance():
+    """Verifies that datasets with empty leading columns and trailing NaNs process without NaN/Inf axis errors."""
+    ragged_csv = """,2θ - °,PAN-1,MOF-2,PAN+MOFs,PAN+ZnO
+,10.00,4694.07,10192.08,6931.74,2881.87
+,10.01,4713.22,10952.57,6905.07,2794.03
+,10.02,4826.22,11853.08,6950.89,2788.33
+,10.03,4978.23,12918.91,6971.01,2768.00
+,,,,,1490.13
+"""
+    from modules.file_parser import parse_delimited_text
+    df_clean = parse_delimited_text(ragged_csv)
+    assert '2θ - °' in df_clean.columns[0]
+    assert len(df_clean) == 4
+    
+    # Must plot cleanly without 'Axis limits cannot be NaN or Inf'
+    fig, ax, fit_results, lp_df = process_and_plot_xrd(df_clean)
+    assert fig is not None
+    assert ax.get_xlim()[0] < ax.get_xlim()[1]
+
+
 if __name__ == '__main__':
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
@@ -138,6 +158,8 @@ if __name__ == '__main__':
     print("  [PASS] FTIR Spectroscopy Engine")
     test_xrd_scherrer()
     print("  [PASS] XRD Crystallography & Scherrer Sizing")
+    test_ragged_csv_and_nan_tolerance()
+    print("  [PASS] Ragged CSV & NaN/Inf Immunity")
     test_uv_vis_kinetics()
     print("  [PASS] UV-Vis Photodegradation Kinetics")
     test_xps_shirley_and_voigt()
@@ -146,4 +168,4 @@ if __name__ == '__main__':
     print("  [PASS] SEM Particle Sizing & EDX Microanalysis")
     test_zip_bundle_export()
     print("  [PASS] ZIP Package & LabPlot ASCII Matrix Bundling")
-    print("\n[ALL 7 TESTS PASSED SUCCESSFULLY!]")
+    print("\n[ALL 8 TESTS PASSED SUCCESSFULLY!]")

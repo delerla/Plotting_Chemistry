@@ -92,7 +92,77 @@ def clean_origin_excel(wb_or_df: Union[pd.DataFrame, pd.ExcelFile]) -> pd.DataFr
 
     # Drop entirely empty rows and columns
     data_df = data_df.dropna(how='all').dropna(axis=1, how='all')
-    return data_df
+    return sanitize_spectral_dataframe(data_df)
+
+
+def sanitize_spectral_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Cleans and standardizes scientific spectral dataframes:
+    1. Removes empty columns and trailing/leading whitespace from headers.
+    2. Detects and drops auto-generated index columns (e.g. 'Unnamed: 0', 0-indexed integers).
+    3. Coerces all data columns to numeric float values.
+    4. Drops rows where the independent variable (X axis / Column 0) is NaN or infinite.
+    5. Drops rows where all intensity/signal values (Y columns) are NaN.
+    6. Ensures finite coordinates for plotting and fitting.
+    """
+    if df is None or df.empty:
+        return pd.DataFrame()
+
+    clean_df = df.copy()
+
+    # 1. Clean column headers
+    clean_df.columns = [re.sub(r'[\r\n\t]+', ' ', str(c)).strip() for c in clean_df.columns]
+
+    # 2. Check if column 0 is a dummy index or entirely NaN
+    if clean_df.shape[1] > 1:
+        c0 = clean_df.columns[0].lower()
+        s0 = clean_df.iloc[:, 0]
+        
+        is_mostly_nan = s0.isna().mean() > 0.4
+        
+        is_seq_int = False
+        non_null_s0 = s0.dropna()
+        if len(non_null_s0) > 3:
+            try:
+                diffs = np.diff(non_null_s0.astype(float))
+                if np.allclose(diffs, 1.0, atol=1e-3) and non_null_s0.iloc[0] in [0, 1]:
+                    is_seq_int = True
+            except Exception:
+                pass
+
+        is_unnamed = c0.startswith('unnamed') or c0 in ['', 'none', 'index', 'idx', 'row', 'col_1', 'col 1']
+        
+        # If column 0 is an index/unnamed and column 1 has data, drop column 0
+        if (is_mostly_nan or is_seq_int or (is_unnamed and not is_number(clean_df.columns[1]))) and clean_df.shape[1] > 2:
+            clean_df = clean_df.iloc[:, 1:]
+        elif is_mostly_nan and clean_df.shape[1] > 1:
+            clean_df = clean_df.iloc[:, 1:]
+
+    # 3. Coerce all columns to numeric
+    for col in clean_df.columns:
+        if clean_df[col].dtype == object:
+            clean_df[col] = pd.to_numeric(
+                clean_df[col].astype(str).str.replace(',', '.').str.strip(),
+                errors='coerce'
+            )
+        else:
+            clean_df[col] = pd.to_numeric(clean_df[col], errors='coerce')
+
+    # 4. Drop entirely empty columns
+    clean_df = clean_df.dropna(axis=1, how='all')
+
+    if clean_df.empty or clean_df.shape[1] < 1:
+        return clean_df
+
+    # 5. Drop rows where X is NaN, None, or infinite
+    x_col = clean_df.columns[0]
+    clean_df = clean_df[clean_df[x_col].notna() & np.isfinite(clean_df[x_col])]
+
+    # 6. Drop rows where all Y columns are NaN
+    if clean_df.shape[1] > 1:
+        clean_df = clean_df[clean_df.iloc[:, 1:].notna().any(axis=1)]
+
+    return clean_df.reset_index(drop=True)
 
 
 def is_number(s: Any) -> bool:
@@ -154,11 +224,18 @@ def parse_delimited_text(text: str) -> pd.DataFrame:
 
     if first_data_idx == -1:
         # Fallback to standard pandas read
-        return pd.read_csv(io.StringIO(text), sep=None, engine='python')
+        try:
+            raw_fallback = pd.read_csv(io.StringIO(text), sep=None, engine='python')
+            return sanitize_spectral_dataframe(raw_fallback)
+        except Exception:
+            return pd.DataFrame()
 
     # Sample data line to know number of columns
     sample_data_line = lines[first_data_idx].strip()
-    sample_parts = [p for p in (sample_data_line.split(best_delimiter) if best_delimiter != ' ' else re.split(r'\s+', sample_data_line)) if p]
+    if best_delimiter == ' ':
+        sample_parts = [p.strip() for p in re.split(r'\s+', sample_data_line) if p.strip()]
+    else:
+        sample_parts = [p.strip() for p in sample_data_line.split(best_delimiter)]
     num_cols = len(sample_parts)
 
     # 2. Extract potential headers in lines before first_data_idx
@@ -167,8 +244,11 @@ def parse_delimited_text(text: str) -> pd.DataFrame:
         h_line = lines[r].strip().lstrip('#//;*!%@ ')
         if not h_line:
             continue
-        parts = [p.strip() for p in (h_line.split(best_delimiter) if best_delimiter != ' ' else re.split(r'\s+', h_line)) if p.strip()]
-        if parts:
+        if best_delimiter == ' ':
+            parts = [p.strip() for p in re.split(r'\s+', h_line) if p.strip()]
+        else:
+            parts = [p.strip() for p in h_line.split(best_delimiter)]
+        if parts and any(parts):
             header_rows.append(parts)
 
     col_names = []
@@ -210,10 +290,13 @@ def parse_delimited_text(text: str) -> pd.DataFrame:
         line_clean = line.strip()
         if not line_clean or line_clean.startswith(('#', '//', ';', '*', '%', '!', '@')):
             continue
-        parts = [p.strip() for p in (line_clean.split(best_delimiter) if best_delimiter != ' ' else re.split(r'\s+', line_clean)) if p.strip()]
-        # Stop or skip footer non-numeric notes
+        if best_delimiter == ' ':
+            parts = [p.strip() for p in re.split(r'\s+', line_clean) if p.strip()]
+        else:
+            parts = [p.strip() for p in line_clean.split(best_delimiter)]
+        # Check if line contains at least one number
         num_count = sum(1 for p in parts if is_number(p))
-        if len(parts) == 0 or (num_count / len(parts)) < 0.4:
+        if len(parts) == 0 or num_count == 0:
             continue
         valid_data_lines.append(best_delimiter.join(parts))
 
@@ -234,7 +317,7 @@ def parse_delimited_text(text: str) -> pd.DataFrame:
     for col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
         
-    return df.dropna(how='all')
+    return sanitize_spectral_dataframe(df)
 
 
 def load_smart_file(
@@ -315,6 +398,7 @@ def load_smart_file(
             return None, None, metadata
 
     if df is not None and not df.empty:
+        df = sanitize_spectral_dataframe(df)
         metadata['rows'] = len(df)
         metadata['columns'] = list(df.columns)
         tech, conf, reason = detect_technique(df, filename)
@@ -335,10 +419,11 @@ def detect_technique(df: pd.DataFrame, filename: str = "") -> Tuple[str, float, 
     fname_lower = filename.lower()
     
     first_col = df.iloc[:, 0].dropna()
+    first_col = first_col[np.isfinite(first_col)]
     if len(first_col) == 0:
         return "Unknown", 0.0, "Empty data"
         
-    x_min, x_max = float(first_col.min()), float(first_col.max())
+    x_min, x_max = float(np.nanmin(first_col)), float(np.nanmax(first_col))
     x_ptp = abs(x_max - x_min)
 
     # 1. FTIR Spectroscopy
