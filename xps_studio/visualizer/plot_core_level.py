@@ -100,7 +100,8 @@ def render_core_level_plot(
     total_fit_with_bg = best_fit + baseline
     residuals = y_raw - total_fit_with_bg
 
-    fig = plt.figure(figsize=actual_size, dpi=300)
+    screen_dpi = int(cfg.get('screen_dpi', 130))
+    fig = plt.figure(figsize=actual_size, dpi=screen_dpi)
 
     if show_residuals:
         gs = gridspec.GridSpec(2, 1, height_ratios=[1, 4.2], hspace=0.06)
