@@ -83,11 +83,17 @@ def extract_net_signal(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Extracts baseline and calculates net photoemission peak intensity.
+    Supports: 'Shirley', 'Linear', 'Constant (Min)', 'None'
     Returns:
         (baseline, net_intensity)
     """
-    if baseline_type == "Linear":
+    bt = baseline_type.lower()
+    if "linear" in bt:
         bg = compute_linear_background(x, y)
+    elif "constant" in bt or "min" in bt:
+        bg = np.full_like(y, float(np.nanmin(y)))
+    elif "none" in bt or "zero" in bt:
+        bg = np.zeros_like(y)
     else:
         bg = compute_shirley_background(x, y)
         

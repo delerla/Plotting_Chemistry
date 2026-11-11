@@ -15,17 +15,30 @@ if str(BASE_DIR) not in sys.path:
 import numpy as np
 import pandas as pd
 
-from xps_studio.knowledge_base import ALL_DOMAINS
-from xps_studio.knowledge_base.benchmark_data import (
-    generate_benchmark_mof_c1s,
-    generate_benchmark_solar_pb4f,
-    generate_benchmark_pan_n1s,
-)
-from xps_studio.core.calibration import apply_charge_calibration
-from xps_studio.core.background import extract_net_signal, compute_shirley_background
-from xps_studio.core.deconvolution import fit_xps_components
-from xps_studio.core.interpretation import interpret_xps_chemistry
-from xps_studio.visualizer.plot_core_level import render_core_level_plot
+try:
+    from knowledge_base import ALL_DOMAINS
+    from knowledge_base.benchmark_data import (
+        generate_benchmark_mof_c1s,
+        generate_benchmark_solar_pb4f,
+        generate_benchmark_pan_n1s,
+    )
+    from core.calibration import apply_charge_calibration
+    from core.background import extract_net_signal, compute_shirley_background
+    from core.deconvolution import fit_xps_components
+    from core.interpretation import interpret_xps_chemistry
+    from visualizer.plot_core_level import render_core_level_plot
+except ImportError:
+    from xps_studio.knowledge_base import ALL_DOMAINS
+    from xps_studio.knowledge_base.benchmark_data import (
+        generate_benchmark_mof_c1s,
+        generate_benchmark_solar_pb4f,
+        generate_benchmark_pan_n1s,
+    )
+    from xps_studio.core.calibration import apply_charge_calibration
+    from xps_studio.core.background import extract_net_signal, compute_shirley_background
+    from xps_studio.core.deconvolution import fit_xps_components
+    from xps_studio.core.interpretation import interpret_xps_chemistry
+    from xps_studio.visualizer.plot_core_level import render_core_level_plot
 
 
 def test_charge_calibration():
@@ -126,7 +139,45 @@ def test_figure_and_labplot_export():
     assert fig is not None
     assert 'Binding_Energy_eV' in labplot_df.columns
     assert 'Residuals' in labplot_df.columns
-    assert 'Comp_Aromatic_C-C_/_C-H' in labplot_df.columns
+    assert 'Comp_Aromatic_C-C___C-H' in labplot_df.columns
+
+
+def test_custom_lineshapes_and_editable_plot():
+    """Tests Pseudo-Voigt GL(30), equal FWHM lock, fixed center, dynamic peak count, and custom plot config."""
+    df = generate_benchmark_mof_c1s()
+    be = df.iloc[:, 0].to_numpy()
+    counts = df.iloc[:, 1].to_numpy()
+    bg, net = extract_net_signal(be, counts, baseline_type="Shirley")
+
+    custom_peaks = [
+        {'prefix': 'p1_', 'name': 'sp2 C', 'center': 284.8, 'center_tol': 0.2, 'fix_center': True, 'sigma': 0.55, 'color': '#1f77b4'},
+        {'prefix': 'p2_', 'name': 'C-O', 'center': 286.2, 'center_tol': 0.3, 'fix_center': False, 'sigma': 0.55, 'color': '#ff7f0e'},
+        {'prefix': 'p3_', 'name': 'O-C=O', 'center': 288.7, 'center_tol': 0.3, 'fix_center': False, 'sigma': 0.55, 'color': '#2ca02c'},
+    ]
+    fit_res, comp_curves, comp_summary, r2 = fit_xps_components(
+        be, net, custom_peaks, line_shape="Pseudo-Voigt (GL)", lock_fwhm_equal=True, gl_fraction=0.30
+    )
+    assert r2 > 0.90
+    assert comp_summary['sp2 C']['Binding_Energy_eV'] == 284.8
+    # Equal FWHM verification
+    fwhms = [v['FWHM_eV'] for v in comp_summary.values()]
+    assert max(fwhms) - min(fwhms) < 0.05
+
+    plot_cfg = {
+        'title': 'Custom MOF C 1s Study',
+        'xlabel': 'Binding Energy [eV]',
+        'ylabel': 'Normalized Counts',
+        'legend_loc': 'outside right',
+        'peak_label_mode': 'Name + BE + Area%',
+        'peak_label_rotation': 90,
+        'show_drop_lines': True,
+        'show_stats_box': True,
+        'stats_extras': {'r2': r2, 'redchi': fit_res.redchi, 'calib_shift': -0.25},
+        'raw_style': 'Open Circles',
+        'show_grid': True
+    }
+    fig, lp = render_core_level_plot(be, counts, bg, fit_res, comp_curves, comp_summary, plot_config=plot_cfg)
+    assert fig is not None
 
 
 if __name__ == '__main__':
@@ -145,4 +196,6 @@ if __name__ == '__main__':
     print("  [PASS] PAN Nanofiber N 1s Cyclization Index")
     test_figure_and_labplot_export()
     print("  [PASS] Dual-Panel Publication Figure & LabPlot Matrix")
-    print("\n[ALL 6 XPS STUDIO TESTS PASSED SUCCESSFULLY!]")
+    test_custom_lineshapes_and_editable_plot()
+    print("  [PASS] Custom Line Shapes (GL Mix), Equal FWHM & Editable Typography")
+    print("\n[ALL 7 XPS STUDIO TESTS PASSED SUCCESSFULLY!]")
