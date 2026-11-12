@@ -149,17 +149,33 @@ def test_ragged_csv_and_nan_tolerance():
 
 
 def test_community_feedback_and_reviews():
-    from modules.feedback_module import get_reviews_file_path, load_reviews, add_review
+    from modules.feedback_module import get_reviews_file_path, load_reviews, add_review, save_all_reviews
     from knowledge_base.saudi_research_databank import search_saudi_databank
     
     fp = get_reviews_file_path()
     revs = load_reviews(fp)
-    assert len(revs) >= 4, f"Expected at least 4 initial reviews, got {len(revs)}"
+    assert isinstance(revs, list), "Expected reviews store to be a list"
     
-    # Verify institutions represented
-    insts = {r.get('institution') for r in revs}
-    assert any("KAUST" in i for i in insts), "KAUST review missing"
-    assert any("KFUPM" in i for i in insts), "KFUPM review missing"
+    # Test submission of a user review and subsequent retrieval
+    sample_rev = {
+        "id": "rev_test",
+        "name": "Dr. Verification User",
+        "role": "Scientist",
+        "institution": "KFUPM",
+        "rating": 5,
+        "category": "Academic Review",
+        "subject": "Platform test",
+        "comment": "Verified submission test",
+        "date": "2026-11-12",
+        "wishes": "Keep the platform pure with real reviews"
+    }
+    assert add_review(sample_rev, fp)
+    updated_revs = load_reviews(fp)
+    assert any(r.get("id") == "rev_test" for r in updated_revs)
+    
+    # Clean up test review so platform remains completely fresh for real users
+    save_all_reviews([], fp)
+    assert len(load_reviews(fp)) == 0
     
     # Test databank search integration
     uio_matches = search_saudi_databank("UiO-66")
