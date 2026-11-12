@@ -5,6 +5,8 @@ Authored & Maintained by Dr. Deler Langenberg (2026)
 """
 
 from typing import Any, Dict, List, Optional
+import numpy as np
+import pandas as pd
 
 # ==============================================================================
 # 1. INSTITUTIONAL CENTERS & RESEARCH PILLARS
@@ -12,20 +14,22 @@ from typing import Any, Dict, List, Optional
 SAUDI_INSTITUTIONS = {
     "KAUST": {
         "name": "King Abdullah University of Science and Technology",
-        "location": "Thuwal, Saudi Arabia",
+        "location": "Thuwal, Makkah Province, Saudi Arabia",
         "badge": "KAUST",
+        "website": "https://www.kaust.edu.sa",
         "flagship_centers": [
             "Advanced Membranes and Porous Materials Center (AMPM)",
             "KAUST Solar Center (KSC)",
             "KAUST Catalysis Center (KCC)",
             "Water Desalination and Reuse Center (WDRC)",
         ],
-        "primary_focus": "Reticular chemistry (MOFs/COFs), ultra-high efficiency tandem perovskite PV, CO₂ capture & conversion, and selective separation membranes.",
+        "primary_focus": "Reticular chemistry (MOFs/COFs), ultra-high efficiency tandem perovskite PV, CO2 capture & conversion, and selective separation membranes.",
     },
     "KFUPM": {
         "name": "King Fahd University of Petroleum and Minerals",
         "location": "Dhahran, Eastern Province, Saudi Arabia",
         "badge": "KFUPM",
+        "website": "https://www.kfupm.edu.sa",
         "flagship_centers": [
             "IRC for Membranes and Water Security",
             "IRC for Hydrogen and Energy Storage",
@@ -38,6 +42,7 @@ SAUDI_INSTITUTIONS = {
         "name": "King Abdulaziz City for Science and Technology",
         "location": "Riyadh, Saudi Arabia",
         "badge": "KACST",
+        "website": "https://www.kacst.edu.sa",
         "flagship_centers": [
             "National Center for Carbon Capture and Utilization (NCCCU)",
             "National Center for Solar Energy Technologies",
@@ -50,6 +55,7 @@ SAUDI_INSTITUTIONS = {
         "name": "Imam Abdulrahman Bin Faisal University (iau.edu.sa)",
         "location": "Dammam / Khobar, Eastern Province, Saudi Arabia",
         "badge": "IAU (iau.edu.sa)",
+        "website": "https://www.iau.edu.sa",
         "flagship_centers": [
             "Institute for Research and Medical Consultations (IRMC) - Advanced Materials & Nanomaterials",
             "College of Science - Department of Chemistry (Applied Materials & Catalysis)",
@@ -64,7 +70,8 @@ RESEARCH_PILLARS = [
     "Carbon Capture, Gas Separation & MOF Porous Frameworks",
     "Perovskite Photovoltaics & Desert-Resilient Solar Absorbers",
     "Water Desalination, Nanofiltration & Polymeric/Carbon Nanofibers",
-    "Advanced Catalysis, CO₂ Conversion & Metal Oxides",
+    "Advanced Catalysis, CO2 Conversion & Metal Oxides",
+    "2D Nanomaterials, MXenes & Functional Composites",
 ]
 
 
@@ -84,9 +91,11 @@ SAUDI_RESEARCH_BENCHMARKS = {
         "literature_references": [
             "Eddaoudi et al. (KAUST AMPM), Chem. Mater. & JACS (Reticular porous frameworks for gas sorption).",
             "KFUPM IRC for Hydrogen and Energy Storage: Structural defect modulation of UiO-66 for gas separation.",
-            "IAU IRMC / College of Science: Adsorptive removal of organic pollutants using porous Zr-MOF composites.",
+            "IAU IRMC / College of Science (iau.edu.sa): Adsorptive removal of organic pollutants using porous Zr-MOF composites.",
+            "KACST NCCCU: Scalable solvothermal synthesis of water-stable Zr-MOFs for flue-gas CO2 scrubbers.",
         ],
         "chemical_formula": "Zr6O4(OH)4(BDC)6-x (x = linker defect missingness)",
+        "keywords": ["uio-66", "uio66", "zirconium", "mof", "carbon capture", "co2", "framework", "kaust", "kfupm", "iau", "kacst"],
         "xps_benchmarks": {
             "core_level": "Zr 3d & C 1s",
             "binding_energies": {
@@ -135,6 +144,7 @@ SAUDI_RESEARCH_BENCHMARKS = {
             "KACST NCCCU: High-temperature hydrothermally stable ZIF-8 carbon capture sorbents.",
         ],
         "chemical_formula": "Zn(2-methylimidazolate)2",
+        "keywords": ["zif-8", "zif8", "zinc", "zeolitic", "sodalite", "membrane", "gas separation", "kaust", "kfupm"],
         "xps_benchmarks": {
             "core_level": "Zn 2p & N 1s",
             "binding_energies": {
@@ -164,9 +174,57 @@ SAUDI_RESEARCH_BENCHMARKS = {
                 {"wavenumber": 1584.0, "mode": "ν(C=N) Ring", "diagnostic": "2-methylimidazole C=N skeletal vibration"},
                 {"wavenumber": 1458.0, "mode": "δ(CH3) Methyl", "diagnostic": "Methyl group deformation"},
                 {"wavenumber": 1146.0, "mode": "ν(C-N) Imidazole", "diagnostic": "Intense characteristic ZIF-8 fingerprint"},
-                {"wavenumber": 421.0, "mode": "ν(Zn-N)", "diagnostic": "Direct tetrahedral Zn-N coordination bond"},
+                {"wavenumber": 421.0, "mode": "ν(Zn-N)", "diagnostic": "Direct coordination node stretching"},
             ],
-            "diagnostic": "Disappearance of free imidazole N-H band (3400-3200 cm⁻¹) confirms 100% deprotonation into Zn(2-MeIM)2.",
+            "diagnostic": "The 421 cm⁻¹ Zn-N mode strictly proves successful metal-ligand coordination.",
+        },
+    },
+
+    "hkust1_cu_framework": {
+        "id": "hkust1_cu_framework",
+        "material_name": "HKUST-1 / MOF-199 (Cu3(BTC)2) Paddle-Wheel MOF",
+        "pillar": "Carbon Capture, Gas Separation & MOF Porous Frameworks",
+        "institutions": ["KAUST", "KFUPM", "KACST"],
+        "primary_citation": "KAUST AMPM / KFUPM Chemistry: Open metal site Cu-paddlewheel frameworks for selective CO2/CH4 and moisture-stabilized gas separation.",
+        "literature_references": [
+            "Eddaoudi et al. (KAUST AMPM), Chem. Soc. Rev. (Open metal sites in reticular materials).",
+            "KFUPM Chemistry & IRC Membranes: Surface functionalization of HKUST-1 for methane storage.",
+            "KACST NCCCU: Humidity-resilient mixed-linker copper MOFs for flue-gas CO2 capture.",
+        ],
+        "chemical_formula": "Cu3(BTC)2(H2O)3 [BTC = benzene-1,3,5-tricarboxylate]",
+        "keywords": ["hkust-1", "hkust1", "mof-199", "copper", "paddle-wheel", "co2", "btc", "kaust", "kfupm"],
+        "xps_benchmarks": {
+            "core_level": "Cu 2p & O 1s",
+            "binding_energies": {
+                "Cu 2p3/2 (Cu²⁺ Paddle-Wheel)": 934.8,
+                "Cu 2p1/2 (Cu²⁺)": 954.6,
+                "Cu 2p3/2 Shake-Up Satellite": 943.2,
+                "C 1s (Aromatic C-C)": 284.8,
+                "C 1s (Carboxylate O-C=O)": 288.7,
+                "O 1s (Cu-O Carboxylate)": 531.8,
+            },
+            "ratio_diagnostic": "Pronounced shake-up satellite at 943.2 eV is mandatory diagnostic proof of paramagnetic d⁹ Cu²⁺ state. Absence indicates unwanted reduction to Cu⁺ / Cu⁰.",
+        },
+        "xrd_benchmarks": {
+            "wavelength_A": 1.54060,
+            "reflections": [
+                {"hkl": "(200)", "two_theta": 6.72, "d_A": 13.14, "note": "Primary cubic paddlewheel low-angle reflection"},
+                {"hkl": "(220)", "two_theta": 9.52, "d_A": 9.28, "note": "Diagnostic Fm-3m lattice reflection"},
+                {"hkl": "(222)", "two_theta": 11.64, "d_A": 7.60, "note": "High-symmetry face diagonal"},
+                {"hkl": "(400)", "two_theta": 13.46, "d_A": 6.57, "note": "Second-order cubic reflection"},
+                {"hkl": "(420)", "two_theta": 15.06, "d_A": 5.88, "note": "Framework window aperture probe"},
+            ],
+            "diagnostic": "Preservation of low-angle reflections at 6.72° and 9.52° confirms intact open-metal site pore geometry.",
+        },
+        "ftir_benchmarks": {
+            "bands": [
+                {"wavenumber": 1645.0, "mode": "ν_as(COO⁻)", "diagnostic": "Asymmetric carboxylate coordination to Cu2 paddlewheel"},
+                {"wavenumber": 1560.0, "mode": "ν(C=C) Benzene Ring", "diagnostic": "BTC aromatic core ring vibration"},
+                {"wavenumber": 1445.0, "mode": "ν_s(COO⁻)", "diagnostic": "Symmetric carboxylate stretch (Deacon splitting Δν ≈ 200 cm⁻¹)"},
+                {"wavenumber": 1375.0, "mode": "δ(C-H)", "diagnostic": "Aromatic C-H in-plane deformation"},
+                {"wavenumber": 730.0, "mode": "ν(Cu-O)", "diagnostic": "Direct Cu-O paddlewheel coordination node"},
+            ],
+            "diagnostic": "Deacon splitting Δν = 200 cm⁻¹ strictly proves bridging bidentate coordination across the Cu-Cu dimeric node.",
         },
     },
 
@@ -175,25 +233,26 @@ SAUDI_RESEARCH_BENCHMARKS = {
     # --------------------------------------------------------------------------
     "perovskite_fapbi3_solar": {
         "id": "perovskite_fapbi3_solar",
-        "material_name": "FAPbI3 / MAPbI3 Halide Perovskite (Desert-Resilient)",
+        "material_name": "FA0.85MA0.15PbI3 Perovskite & PbI2 Degradation",
         "pillar": "Perovskite Photovoltaics & Desert-Resilient Solar Absorbers",
         "institutions": ["KAUST", "KFUPM", "KACST"],
-        "primary_citation": "KAUST Solar Center (KSC) / KFUPM Renewable Energy: Defect-passivated halide perovskites with >33% tandem efficiency and desert heat/UV tolerance.",
+        "primary_citation": "KAUST Solar Center (KSC) / KACST Solar: High-performance tandem perovskite/silicon cells and desert outdoor stability testing.",
         "literature_references": [
-            "De Wolf, Bakr, Laquai et al. (KAUST Solar Center), Science & Nature Energy (Perovskite/Si tandems).",
-            "KFUPM IRC for Renewable Energy: High-temperature stability of multi-cation perovskites in extreme desert climates.",
-            "KACST Solar Energy: Industrial encapsulation and outdoor aging of halide perovskite PV modules.",
+            "De Wolf, Bakr et al. (KAUST Solar Center), Science & Nature Energy (Outdoor thermal & moisture stability in Saudi desert).",
+            "KFUPM Renewable Energy: Compositional engineering of 2D/3D perovskite heterostructures for moisture barriers.",
+            "KACST National Solar Technologies: Grid-connected utility-scale photovoltaic module reliability under high UV index.",
         ],
-        "chemical_formula": "FA0.85MA0.10Cs0.05Pb(I0.85Br0.15)3",
+        "chemical_formula": "(FA)0.85(MA)0.15PbI3 (FA = CH(NH2)2⁺, MA = CH3NH3⁺)",
+        "keywords": ["perovskite", "fapbi3", "mapbi3", "pbi2", "solar", "photovoltaic", "kaust", "ksc", "kfupm", "kacst"],
         "xps_benchmarks": {
             "core_level": "Pb 4f & I 3d",
             "binding_energies": {
                 "Pb 4f7/2 (Perovskite Pb²⁺)": 138.4,
                 "Pb 4f5/2 (Perovskite Pb²⁺)": 143.3,
-                "Pb 4f7/2 (Metallic Pb⁰ Defect)": 136.6,
-                "Pb 4f5/2 (Metallic Pb⁰ Defect)": 141.5,
-                "I 3d5/2 (Halide I⁻)": 619.3,
-                "I 3d3/2 (Halide I⁻)": 630.8,
+                "Pb 4f7/2 (Metallic Pb⁰ Photolysis)": 136.6,
+                "Pb 4f5/2 (Metallic Pb⁰ Photolysis)": 141.5,
+                "I 3d5/2 (Iodide I⁻)": 619.1,
+                "I 3d3/2 (Iodide I⁻)": 630.8,
             },
             "ratio_diagnostic": "Metallic Pb⁰ doublet at ~136.6 eV points to beam/photothermal reduction; Pb⁰ / (Pb⁰ + Pb²⁺) fraction quantifies photolytic degradation.",
         },
@@ -221,13 +280,59 @@ SAUDI_RESEARCH_BENCHMARKS = {
         },
     },
 
+    "cspbbr3_inorganic_perovskite": {
+        "id": "cspbbr3_inorganic_perovskite",
+        "material_name": "All-Inorganic CsPbBr3 Perovskite for Extreme Desert Durability",
+        "pillar": "Perovskite Photovoltaics & Desert-Resilient Solar Absorbers",
+        "institutions": ["KAUST", "KFUPM", "KACST"],
+        "primary_citation": "KAUST KSC / KFUPM Physics: Moisture- and thermally-stable all-inorganic CsPbBr3 halide perovskite tandem and optoelectronic devices.",
+        "literature_references": [
+            "Bakr, De Wolf et al. (KAUST KSC), ACS Energy Lett. (All-inorganic perovskite thermal resilience >85°C).",
+            "KFUPM IRC Renewable Energy: Spray-coated CsPbBr3 films for concentrated solar photodetectors.",
+            "KACST Solar: Long-term operational photostability of lead halide perovskites without organic cation loss.",
+        ],
+        "chemical_formula": "CsPbBr3 (Cubic / Orthorhombic phase)",
+        "keywords": ["cspbbr3", "inorganic perovskite", "cesium", "lead bromide", "solar", "desert", "kaust", "kfupm"],
+        "xps_benchmarks": {
+            "core_level": "Cs 3d, Pb 4f & Br 3d",
+            "binding_energies": {
+                "Cs 3d5/2": 724.2,
+                "Cs 3d3/2": 738.1,
+                "Pb 4f7/2 (Perovskite Pb²⁺)": 138.6,
+                "Pb 4f5/2": 143.5,
+                "Br 3d5/2": 68.3,
+                "Br 3d3/2": 69.4,
+            },
+            "ratio_diagnostic": "Stoichiometric atomic ratio Cs : Pb : Br = 1.0 : 1.0 : 3.0 confirms phase-pure inorganic perovskite with minimal halide vacancies.",
+        },
+        "xrd_benchmarks": {
+            "wavelength_A": 1.54060,
+            "reflections": [
+                {"hkl": "(100)", "two_theta": 15.18, "d_A": 5.83, "note": "Characteristic low-angle cubic perovskite reflection"},
+                {"hkl": "(110)", "two_theta": 21.56, "d_A": 4.12, "note": "Diagonal lattice plane reflection"},
+                {"hkl": "(111)", "two_theta": 26.54, "d_A": 3.36, "note": "High-symmetry octahedron orientation"},
+                {"hkl": "(200)", "two_theta": 30.68, "d_A": 2.91, "note": "High-intensity double harmonic reflection"},
+                {"hkl": "(210)", "two_theta": 34.42, "d_A": 2.60, "note": "In-plane bromide distortion probe"},
+            ],
+            "diagnostic": "Sharp single peaks at 15.18° and 30.68° confirm pure cubic Pm-3m phase, while peak splitting indicates orthorhombic Pnma transition.",
+        },
+        "ftir_benchmarks": {
+            "bands": [
+                {"wavenumber": 1625.0, "mode": "δ(H-O-H)", "diagnostic": "Surface physisorbed water without lattice organic cation degradation"},
+                {"wavenumber": 1385.0, "mode": "ν(Cs-Br / Acoustic)", "diagnostic": "Lattice phonon overtones"},
+                {"wavenumber": 680.0, "mode": "Surface Hydroxyl", "diagnostic": "Surface passivating metal-OH interaction"},
+            ],
+            "diagnostic": "Absence of N-H/C-H organic bands (>2800 cm⁻¹) definitively verifies all-inorganic composition resistant to volatilization.",
+        },
+    },
+
     # --------------------------------------------------------------------------
     # PILLAR 3: CATALYSIS, CO2 CONVERSION & METAL OXIDES
     # --------------------------------------------------------------------------
     "tio2_catalyst_photocatalysis": {
         "id": "tio2_catalyst_photocatalysis",
         "material_name": "TiO2 Anatase-Rutile Nanocatalysts (P25 / Calcined)",
-        "pillar": "Advanced Catalysis, CO₂ Conversion & Metal Oxides",
+        "pillar": "Advanced Catalysis, CO2 Conversion & Metal Oxides",
         "institutions": ["KAUST", "KFUPM", "KACST", "IAU"],
         "primary_citation": "KAUST Catalysis / IAU IRMC / KFUPM CREPP: Phase junction engineering in Anatase/Rutile TiO2 for solar water splitting & water decontamination.",
         "literature_references": [
@@ -237,6 +342,7 @@ SAUDI_RESEARCH_BENCHMARKS = {
             "KACST Advanced Materials: Large-scale photocatalytic purification of industrial wastewater.",
         ],
         "chemical_formula": "TiO2 (Mixed Anatase + Rutile)",
+        "keywords": ["tio2", "titania", "anatase", "rutile", "p25", "catalyst", "photocatalysis", "spurr-myers", "kaust", "kfupm", "iau", "kacst"],
         "xps_benchmarks": {
             "core_level": "Ti 2p & O 1s",
             "binding_energies": {
@@ -272,6 +378,53 @@ SAUDI_RESEARCH_BENCHMARKS = {
         },
     },
 
+    "cu2o_photocatalyst": {
+        "id": "cu2o_photocatalyst",
+        "material_name": "Cu/Cu2O/CuO Heterojunctions for CO2 Electroreduction & Solar Fuel",
+        "pillar": "Advanced Catalysis, CO2 Conversion & Metal Oxides",
+        "institutions": ["KAUST", "KFUPM", "KACST", "IAU"],
+        "primary_citation": "KAUST Catalysis / KFUPM Hydrogen / IAU IRMC: Mixed-valence copper oxides for selective C2+ electrochemical reduction of CO2.",
+        "literature_references": [
+            "Sargent, Cavallo et al. (KAUST KCC), Nature Catalysis & ACS Catal. (Cu+ and Cu0 interface dynamics in CO2 conversion).",
+            "KFUPM IRC for Hydrogen and Energy Storage: Nanostructured copper foam electrodes for electrochemical syngas production.",
+            "IAU IRMC / College of Science (iau.edu.sa): Cuprous oxide nanoparticle thin films for solar-driven dye degradation.",
+        ],
+        "chemical_formula": "Cu2O / CuO / Cu composite",
+        "keywords": ["cu2o", "cuo", "copper oxide", "co2 reduction", "electrocatalysis", "kaust", "kfupm", "iau", "kacst"],
+        "xps_benchmarks": {
+            "core_level": "Cu 2p & Cu LMM Auger",
+            "binding_energies": {
+                "Cu 2p3/2 (Cu⁺ in Cu2O / Cu⁰)": 932.4,
+                "Cu 2p3/2 (Cu²⁺ in CuO)": 933.8,
+                "Cu 2p3/2 Shake-Up Satellite (CuO)": 942.5,
+                "Cu 2p1/2": 952.2,
+                "O 1s (Cu2O Lattice)": 530.3,
+                "O 1s (CuO Lattice)": 529.6,
+            },
+            "ratio_diagnostic": "Cu 2p3/2 alone cannot differentiate Cu⁰ (932.6 eV) from Cu⁺ (932.4 eV); modified Auger parameter α' = BE(Cu 2p3/2) + KE(Cu LMM) (1849.2 eV for Cu2O vs 1851.2 eV for Cu metal) is required.",
+        },
+        "xrd_benchmarks": {
+            "wavelength_A": 1.54060,
+            "reflections": [
+                {"hkl": "Cu2O (110)", "two_theta": 29.58, "d_A": 3.02, "note": "Low-index cuprous oxide reflection"},
+                {"hkl": "Cu2O (111)", "two_theta": 36.44, "d_A": 2.46, "note": "Dominant active facet for C2+ selectivity"},
+                {"hkl": "CuO (-111)", "two_theta": 35.54, "d_A": 2.52, "note": "Cupric oxide secondary phase"},
+                {"hkl": "CuO (111)", "two_theta": 38.74, "d_A": 2.32, "note": "Tenorite phase indicator"},
+                {"hkl": "Cu2O (200)", "two_theta": 42.32, "d_A": 2.13, "note": "Cubic Cu2O facet plane"},
+                {"hkl": "Cu⁰ (111)", "two_theta": 43.32, "d_A": 2.09, "note": "Metallic copper core reflection"},
+            ],
+            "diagnostic": "Intensity ratio I(111)/I(200) for Cu2O evaluates facet orientation governing CO2-to-ethylene catalytic selectivity.",
+        },
+        "ftir_benchmarks": {
+            "bands": [
+                {"wavenumber": 612.0, "mode": "ν(Cu-O in Cu2O)", "diagnostic": "Characteristic vibrational mode of Cu(I) cuprous oxide"},
+                {"wavenumber": 525.0, "mode": "ν(Cu-O in CuO)", "diagnostic": "Monoclinic tenorite Cu(II) oxide lattice band"},
+                {"wavenumber": 1420.0, "mode": "ν_s(CO3²⁻)", "diagnostic": "Surface bicarbonate/carbonate during CO2 reduction"},
+            ],
+            "diagnostic": "Sharp absorption at 612 cm⁻¹ strictly distinguishes Cu2O from tenorite CuO (525 cm⁻¹).",
+        },
+    },
+
     # --------------------------------------------------------------------------
     # PILLAR 4: WATER MEMBRANES, DESALINATION & NANOFIBERS
     # --------------------------------------------------------------------------
@@ -284,10 +437,11 @@ SAUDI_RESEARCH_BENCHMARKS = {
         "literature_references": [
             "KFUPM IRC for Membranes & Water Security, Desalination & J. Membr. Sci. (Superhydrophobic electrospun membranes).",
             "KAUST WDRC: Carbonized nanofiber networks for solar-driven interfacial steam generation.",
-            "IAU College of Engineering / IRMC: Heavy metal adsorption and dye separation on functionalized PAN nanofibers.",
+            "IAU College of Engineering / IRMC (iau.edu.sa): Heavy metal adsorption and dye separation on functionalized PAN nanofibers.",
             "KACST Advanced Materials: High-toughness carbonized electrospun electrodes for electrochemical desalination (CDI).",
         ],
         "chemical_formula": "(C3H3N)n -> Turbostratic Carbon (C)",
+        "keywords": ["pan", "polyacrylonitrile", "cnf", "carbon nanofiber", "electrospun", "membrane", "desalination", "cyclization", "kfupm", "kaust", "iau", "kacst"],
         "xps_benchmarks": {
             "core_level": "C 1s & N 1s",
             "binding_energies": {
@@ -324,12 +478,203 @@ SAUDI_RESEARCH_BENCHMARKS = {
             "diagnostic": "Extent of Stabilization E_s = [0.29 · I(1598)] / [I(2243) + 0.29 · I(1598)] tracks chemical aromatization efficiency.",
         },
     },
+
+    "go_rgo_desalination_membrane": {
+        "id": "go_rgo_desalination_membrane",
+        "material_name": "Graphene Oxide (GO) & Reduced rGO Desalination Membranes",
+        "pillar": "Water Desalination, Nanofiltration & Polymeric/Carbon Nanofibers",
+        "institutions": ["KAUST", "KFUPM", "KACST", "IAU"],
+        "primary_citation": "KAUST AMPM / KFUPM IRC Membranes / IAU IRMC: 2D laminar graphene oxide nanosheet membranes for precise ion sieving and water purification.",
+        "literature_references": [
+            "Alshareef, Pinnau et al. (KAUST AMPM), Nat. Commun. & ACS Nano (Fast water transport through 2D laminar nanochannels).",
+            "KFUPM IRC for Membranes & Water Security: Chemical cross-linking of GO membranes with diamines for swelling suppression in brine.",
+            "IAU IRMC / College of Engineering (iau.edu.sa): Graphene oxide-chitosan hybrid hydrogels for toxic heavy metal decontamination.",
+            "KACST Advanced Materials: Pilot-scale fabrication of laminar GO reverse-osmosis support layers.",
+        ],
+        "chemical_formula": "C10O1(OH)1(COOH)0.5 -> Reduced Graphene (rGO)",
+        "keywords": ["go", "rgo", "graphene oxide", "membrane", "desalination", "water", "sieving", "kaust", "kfupm", "iau", "kacst"],
+        "xps_benchmarks": {
+            "core_level": "C 1s & O 1s",
+            "binding_energies": {
+                "C 1s (sp² C=C / C-C)": 284.6,
+                "C 1s (Epoxy / Hydroxyl C-O)": 286.7,
+                "C 1s (Carbonyl C=O)": 287.8,
+                "C 1s (Carboxylate O-C=O)": 288.9,
+                "O 1s (C-O / C=O)": 532.5,
+            },
+            "ratio_diagnostic": "Area ratio A(C-O + C=O) / A(sp² C-C) measures oxidation degree (~1.2 in pristine GO; drops to <0.3 upon thermal/chemical reduction to rGO).",
+        },
+        "xrd_benchmarks": {
+            "wavelength_A": 1.54060,
+            "reflections": [
+                {"hkl": "GO (001)", "two_theta": 10.45, "d_A": 8.46, "note": "Hydrated interlayer d-spacing governed by intercalated oxygen groups and water"},
+                {"hkl": "rGO (002)", "two_theta": 25.80, "d_A": 3.45, "note": "Restoration of π-π stacked graphitic interlayer lattice"},
+                {"hkl": "Graphite (002)", "two_theta": 26.55, "d_A": 3.35, "note": "Pristine unoxidized graphite raw material indicator"},
+            ],
+            "diagnostic": "Complete shift of reflection from 26.55° (d = 3.35 Å) to 10.45° (d = 8.46 Å) confirms full chemical exfoliation and basal plane oxidation.",
+        },
+        "ftir_benchmarks": {
+            "bands": [
+                {"wavenumber": 3410.0, "mode": "ν(O-H)", "diagnostic": "Broad intermolecular hydrogen-bonded hydroxyls"},
+                {"wavenumber": 1732.0, "mode": "ν(C=O) Carboxyl", "diagnostic": "Carbonyl/carboxyl at sheet edges"},
+                {"wavenumber": 1622.0, "mode": "ν(C=C) sp² Core", "diagnostic": "Unoxidized aromatic skeletal graphitic domains"},
+                {"wavenumber": 1225.0, "mode": "ν(C-O-C) Epoxy", "diagnostic": "Basal plane epoxide stretch"},
+                {"wavenumber": 1050.0, "mode": "ν(C-O) Alkoxy", "diagnostic": "Aliphatic C-O stretching vibration"},
+            ],
+            "diagnostic": "Disappearance of epoxy (1225 cm⁻¹) and carboxyl (1732 cm⁻¹) bands strictly confirms reduction to rGO for water membrane durability.",
+        },
+    },
+
+    # --------------------------------------------------------------------------
+    # PILLAR 5: 2D MXENES & ADVANCED COMPOSITES
+    # --------------------------------------------------------------------------
+    "mxene_ti3c2tx_energy": {
+        "id": "mxene_ti3c2tx_energy",
+        "material_name": "Ti3C2Tx MXene 2D Nanoflakes (HF / LiF-HCl Etched)",
+        "pillar": "2D Nanomaterials, MXenes & Functional Composites",
+        "institutions": ["KAUST", "KFUPM", "KACST", "IAU"],
+        "primary_citation": "KAUST Physical Science / KFUPM Hydrogen / IAU IRMC: 2D titanium carbide MXene electrodes and membranes for capacitive desalination & energy storage.",
+        "literature_references": [
+            "Alshareef et al. (KAUST AMPM), Adv. Mater. & ACS Nano (Conductive MXene membranes for electromagnetic shielding and supercapacitors).",
+            "KFUPM IRC for Renewable Energy: High-rate pseudocapacitive MXene-polymer hybrid electrodes.",
+            "IAU IRMC / College of Science (iau.edu.sa): MXene-supported metal nanoparticles for antimicrobial and water pollutant degradation.",
+            "KACST Advanced Materials: Scalable synthesis of fluorine-minimized MXene delaminated nanosheets.",
+        ],
+        "chemical_formula": "Ti3C2Tx (Tx = -O, -OH, -F surface terminations)",
+        "keywords": ["mxene", "ti3c2tx", "ti3c2", "2d", "titanium carbide", "delamination", "max phase", "kaust", "kfupm", "iau", "kacst"],
+        "xps_benchmarks": {
+            "core_level": "Ti 2p, C 1s & F 1s",
+            "binding_energies": {
+                "Ti 2p3/2 (Ti-C Carbidic)": 454.9,
+                "Ti 2p3/2 (Ti-O Surface Tx)": 456.2,
+                "Ti 2p3/2 (Ti-F Surface Tx)": 457.5,
+                "Ti 2p3/2 (TiO2 Degradation Impurity)": 458.8,
+                "C 1s (C-Ti Carbidic)": 281.8,
+                "C 1s (Graphitic C-C)": 284.8,
+                "F 1s (F-Ti Surface Termination)": 684.9,
+            },
+            "ratio_diagnostic": "Intense carbidic C-Ti peak at 281.8 eV and carbidic Ti-C at 454.9 eV are unique fingerprints of 2D MXene core. Emergence of TiO2 at 458.8 eV signals ambient oxidation.",
+        },
+        "xrd_benchmarks": {
+            "wavelength_A": 1.54060,
+            "reflections": [
+                {"hkl": "(002)", "two_theta": 6.85, "d_A": 12.89, "note": "Primary delaminated basal plane reflection (shifts from 9.5° in Ti3AlC2 parent MAX phase)"},
+                {"hkl": "(004)", "two_theta": 13.92, "d_A": 6.36, "note": "Second-order harmonic"},
+                {"hkl": "(006)", "two_theta": 20.85, "d_A": 4.26, "note": "Third-order basal reflection"},
+                {"hkl": "MAX (104)", "two_theta": 39.02, "d_A": 2.31, "note": "Parent Ti3AlC2 MAX phase peak (MUST completely disappear upon full Al etching)"},
+            ],
+            "diagnostic": "Disappearance of MAX phase (104) at 39.02° and downshift of (002) from 9.5° to 6.85° proves complete Al extraction and delamination.",
+        },
+        "ftir_benchmarks": {
+            "bands": [
+                {"wavenumber": 3435.0, "mode": "ν(O-H) Tx Termination", "diagnostic": "Hydroxyl surface terminations and intercalated water"},
+                {"wavenumber": 1635.0, "mode": "δ(H-O-H)", "diagnostic": "Intercalated water bending"},
+                {"wavenumber": 1080.0, "mode": "ν(C-F / C-O)", "diagnostic": "Surface functional group vibration"},
+                {"wavenumber": 620.0, "mode": "ν(Ti-O)", "diagnostic": "Surface oxygen termination lattice mode"},
+                {"wavenumber": 530.0, "mode": "ν(Ti-C)", "diagnostic": "Core carbidic layer stretching"},
+            ],
+            "diagnostic": "Strong Ti-O (620 cm⁻¹) and Ti-C (530 cm⁻¹) envelope with absence of bulk TiO2 indicates pristine terminated flakes.",
+        },
+    },
 }
 
 
 # ==============================================================================
-# 3. HELPER FUNCTIONS FOR DISCOVERY, VERIFICATION & AUDIT
+# 3. ADVANCED SEARCH, FILTERING & CROSS-REFERENCING ENGINE
 # ==============================================================================
+def search_saudi_databank(
+    query: str = "",
+    institution: Optional[str] = None,
+    technique: Optional[str] = None,
+    pillar: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Comprehensive multi-field cross-referencing search engine for Saudi research benchmarks.
+    Filters by:
+    - query: searches material name, chemical formula, ID, keywords, citations, literature references, and diagnostic terms
+    - institution: 'KAUST', 'KFUPM', 'KACST', 'IAU' (or None / 'All')
+    - technique: 'XPS', 'XRD', 'FTIR' (or None / 'All')
+    - pillar: research pillar name (or None / 'All')
+    """
+    results = []
+    q = (query or "").strip().lower()
+    inst_filter = institution.upper().strip() if (institution and "ALL" not in institution.upper()) else None
+    
+    tech_filter = None
+    if technique and "ALL" not in technique.upper():
+        if "XPS" in technique.upper():
+            tech_filter = "xps"
+        elif "XRD" in technique.upper():
+            tech_filter = "xrd"
+        elif "FTIR" in technique.upper():
+            tech_filter = "ftir"
+
+    pillar_filter = pillar.strip() if (pillar and "ALL" not in pillar.upper()) else None
+
+    for b in SAUDI_RESEARCH_BENCHMARKS.values():
+        # 1. Institution check
+        if inst_filter and inst_filter not in b.get("institutions", []):
+            continue
+
+        # 2. Pillar check
+        if pillar_filter and b.get("pillar") != pillar_filter:
+            continue
+
+        # 3. Technique check
+        if tech_filter:
+            tech_key = f"{tech_filter}_benchmarks"
+            if tech_key not in b:
+                continue
+
+        # 4. Text Query matching across all metadata
+        if q:
+            match_found = False
+            # Search in material name, formula, id
+            if q in b.get("material_name", "").lower():
+                match_found = True
+            elif q in b.get("chemical_formula", "").lower():
+                match_found = True
+            elif q in b.get("id", "").lower():
+                match_found = True
+            elif q in b.get("primary_citation", "").lower():
+                match_found = True
+            elif any(q in kw.lower() for kw in b.get("keywords", [])):
+                match_found = True
+            elif any(q in ref.lower() for ref in b.get("literature_references", [])):
+                match_found = True
+            
+            # Search in XPS core levels & binding energies
+            if not match_found and "xps_benchmarks" in b:
+                xps_data = b["xps_benchmarks"]
+                if q in xps_data.get("core_level", "").lower() or q in xps_data.get("ratio_diagnostic", "").lower():
+                    match_found = True
+                elif any(q in k.lower() for k in xps_data.get("binding_energies", {}).keys()):
+                    match_found = True
+
+            # Search in XRD reflections
+            if not match_found and "xrd_benchmarks" in b:
+                xrd_data = b["xrd_benchmarks"]
+                if q in xrd_data.get("diagnostic", "").lower():
+                    match_found = True
+                elif any(q in r.get("hkl", "").lower() or q in r.get("note", "").lower() for r in xrd_data.get("reflections", [])):
+                    match_found = True
+
+            # Search in FTIR bands
+            if not match_found and "ftir_benchmarks" in b:
+                ftir_data = b["ftir_benchmarks"]
+                if q in ftir_data.get("diagnostic", "").lower():
+                    match_found = True
+                elif any(q in band.get("mode", "").lower() or q in band.get("diagnostic", "").lower() for band in ftir_data.get("bands", [])):
+                    match_found = True
+
+            if not match_found:
+                continue
+
+        results.append(b)
+
+    return results
+
+
 def list_benchmarks_for_institution(inst_code: str) -> List[Dict[str, Any]]:
     """Returns all benchmarks associated with a specific Saudi institution."""
     code = inst_code.upper().strip()

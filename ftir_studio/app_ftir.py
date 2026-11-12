@@ -355,19 +355,29 @@ with st.sidebar:
     active_preset = domain_presets[selected_preset_name]
 
     with st.expander("🇸🇦 Saudi Alliance Databank (KFUPM, KACST, KAUST, IAU)", expanded=False):
+        sq = st.text_input("🔍 Filter Materials / Literature:", placeholder="UiO-66, Perovskite, TiO2, MXene...", key="ftir_saudi_sq")
         inst_choice = st.selectbox(
             "Institution Focus:",
             ["All Saudi Alliance Partners", "KAUST", "KFUPM", "KACST", "IAU (iau.edu.sa)"],
             key="ftir_saudi_inst"
         )
         sub_code = inst_choice.split()[0] if "All" not in inst_choice else ""
-        bms = list_benchmarks_for_institution(sub_code) if sub_code else list(SAUDI_RESEARCH_BENCHMARKS.values())
-        bm_titles = [f"{b['institutions'][0]}: {b['material_name']}" for b in bms]
-        sel_idx = st.selectbox("Institutional References:", range(len(bm_titles)), format_func=lambda i: bm_titles[i], key="ftir_saudi_bm_select")
-        active_saudi_bm = bms[sel_idx]
-        st.markdown(f"**Pillar:** *{active_saudi_bm['pillar']}*")
-        st.markdown(f"**Partners:** {', '.join(active_saudi_bm['institutions'])}")
-        st.caption(f"**Key Citation:** {active_saudi_bm['primary_citation']}")
+        from knowledge_base.saudi_research_databank import search_saudi_databank
+        bms = search_saudi_databank(query=sq, institution=sub_code, technique="FTIR")
+        if bms:
+            bm_titles = [f"{b['material_name']} ({'/'.join(b['institutions'])})" for b in bms]
+            sel_idx = st.selectbox("Institutional References:", range(len(bm_titles)), format_func=lambda i: bm_titles[i], key="ftir_saudi_bm_select")
+            active_saudi_bm = bms[sel_idx]
+            st.markdown(f"**Pillar:** *{active_saudi_bm['pillar']}*")
+            st.markdown(f"**Partners:** {', '.join(active_saudi_bm['institutions'])}")
+            st.caption(f"**Key Citation:** {active_saudi_bm['primary_citation']}")
+            with st.expander("📖 Expected FTIR Vibrational Bands", expanded=False):
+                if "ftir_benchmarks" in active_saudi_bm:
+                    for b in active_saudi_bm["ftir_benchmarks"].get("bands", []):
+                        st.markdown(f"- **{b.get('mode')}**: `{b.get('wavenumber'):.0f} cm⁻¹` • *{b.get('diagnostic', '')}*")
+                    st.caption(active_saudi_bm["ftir_benchmarks"].get("diagnostic", ""))
+        else:
+            st.caption("No matching benchmarks found.")
 
     st.markdown("### 2. Spectrum Data Source")
     uploaded_file = st.file_uploader(
@@ -743,6 +753,10 @@ with tab_deconv:
                 m_df = pd.DataFrame(saudi_verif['matches'])
                 m_df.columns = ["Vibrational Mode", "Literature ν (cm⁻¹)", "Measured ν (cm⁻¹)", "Deviation |Δν| (cm⁻¹)", "Audit Status"]
                 st.dataframe(m_df, use_container_width=True)
+
+        with st.expander("🔍 Search Full Saudi Alliance Literature & Peak Databank (KFUPM · KACST · KAUST · IAU)", expanded=False):
+            from modules.saudi_search_ui import render_saudi_alliance_explorer
+            render_saudi_alliance_explorer(active_technique="FTIR")
 
         # Lazy Publication Export Center
         st.markdown("#### 📥 Publication Export Center")

@@ -178,19 +178,29 @@ with st.sidebar:
     active_preset = domain_presets[selected_preset_name]
 
     with st.expander("🇸🇦 Saudi Alliance Databank (KFUPM, KACST, KAUST, IAU)", expanded=False):
+        sq = st.text_input("🔍 Filter Materials / Literature:", placeholder="UiO-66, Perovskite, TiO2, MXene...", key="xps_saudi_sq")
         inst_choice = st.selectbox(
             "Institution Focus:",
             ["All Saudi Alliance Partners", "KAUST", "KFUPM", "KACST", "IAU (iau.edu.sa)"],
             key="xps_saudi_inst"
         )
         sub_code = inst_choice.split()[0] if "All" not in inst_choice else ""
-        bms = list_benchmarks_for_institution(sub_code) if sub_code else list(SAUDI_RESEARCH_BENCHMARKS.values())
-        bm_titles = [f"{b['institutions'][0]}: {b['material_name']}" for b in bms]
-        sel_idx = st.selectbox("Institutional References:", range(len(bm_titles)), format_func=lambda i: bm_titles[i], key="xps_saudi_bm_select")
-        active_saudi_bm = bms[sel_idx]
-        st.markdown(f"**Pillar:** *{active_saudi_bm['pillar']}*")
-        st.markdown(f"**Partners:** {', '.join(active_saudi_bm['institutions'])}")
-        st.caption(f"**Key Citation:** {active_saudi_bm['primary_citation']}")
+        from knowledge_base.saudi_research_databank import search_saudi_databank
+        bms = search_saudi_databank(query=sq, institution=sub_code, technique="XPS")
+        if bms:
+            bm_titles = [f"{b['material_name']} ({'/'.join(b['institutions'])})" for b in bms]
+            sel_idx = st.selectbox("Institutional References:", range(len(bm_titles)), format_func=lambda i: bm_titles[i], key="xps_saudi_bm_select")
+            active_saudi_bm = bms[sel_idx]
+            st.markdown(f"**Pillar:** *{active_saudi_bm['pillar']}*")
+            st.markdown(f"**Partners:** {', '.join(active_saudi_bm['institutions'])}")
+            st.caption(f"**Key Citation:** {active_saudi_bm['primary_citation']}")
+            with st.expander("📖 Expected XPS Core Levels", expanded=False):
+                if "xps_benchmarks" in active_saudi_bm:
+                    for k, v in active_saudi_bm["xps_benchmarks"].get("binding_energies", {}).items():
+                        st.markdown(f"- **{k}**: `{v:.1f} eV`")
+                    st.caption(active_saudi_bm["xps_benchmarks"].get("ratio_diagnostic", ""))
+        else:
+            st.caption("No matching benchmarks found.")
 
     st.markdown("---")
     selected_theme = st.selectbox(
@@ -719,6 +729,10 @@ with col_main:
                 m_df = pd.DataFrame(saudi_verif['matches'])
                 m_df.columns = ["State Assignment", "Literature BE (eV)", "Measured BE (eV)", "Deviation |ΔBE| (eV)", "Audit Status"]
                 st.dataframe(m_df, use_container_width=True)
+
+        with st.expander("🔍 Search Full Saudi Alliance Literature & Peak Databank (KFUPM · KACST · KAUST · IAU)", expanded=False):
+            from modules.saudi_search_ui import render_saudi_alliance_explorer
+            render_saudi_alliance_explorer(active_technique="XPS")
 
         # ----------------------------------------------------------------------
         # LAZY PUBLICATION EXPORT CENTER (KEEPS PC FAST DURING INTERACTION!)

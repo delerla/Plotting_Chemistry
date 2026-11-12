@@ -38,6 +38,7 @@ from modules.sem_edx_module import (
     generate_benchmark_sem_image,
     generate_benchmark_edx_data
 )
+from modules.saudi_search_ui import render_saudi_alliance_explorer, render_sidebar_saudi_quick_search
 
 # Page configuration
 st.set_page_config(
@@ -130,7 +131,8 @@ TECHNIQUES = [
     "2. XRD Crystallography",
     "3. UV-Vis & Dye Kinetics",
     "4. XPS Core Deconvolution",
-    "5. SEM & EDX Microanalysis"
+    "5. SEM & EDX Microanalysis",
+    "6. 🇸🇦 Saudi Alliance Reference Explorer"
 ]
 
 ALL_SUPPORTED_EXTS = ["csv", "xlsx", "xls", "txt", "dat", "tsv", "ascii", "asc", "dpt", "prn", "xy", "png", "jpg", "tif", "tiff"]
@@ -213,21 +215,16 @@ with st.sidebar:
     st.markdown("---")
     with st.expander("🇸🇦 Saudi Research Alliance (KAUST · KFUPM · KACST · IAU)", expanded=False):
         st.markdown("""
-        **Cross-Institutional Research Intelligence**
+        **Cross-Institutional Reference Databank**
         
-        Tuned to flagship research programs across:
-        - **KAUST**: AMPM, KSC, KCC, WDRC
-        - **KFUPM**: IRC for Membranes & Water Security, IRC for Hydrogen & Energy Storage
-        - **KACST**: Energy & Water Research Institute, CREPP, NCCCU
-        - **IAU** (`iau.edu.sa`): Institute for Research and Medical Consultations (IRMC)
-
-        **Key Research Pillars:**
-        1. 🟢 *MOFs & Carbon Capture* (UiO-66, ZIF-8, HKUST-1)
-        2. ☀️ *Perovskite Solar Absorbers* (FAPbI3 / MAPbI3 & PbI2 photolysis)
-        3. ⚡ *Heterogeneous Catalysis* (TiO2 Anatase/Rutile P25, Cu/Cu2O)
-        4. 💧 *Desalination Membranes* (Electrospun PAN -> Carbon Nanofibers)
-
-        *Dedicated standalone studios on ports 8502 (XPS), 8503 (XRD), and 8504 (FTIR).*
+        Audited benchmarks spanning **KAUST**, **KFUPM**, **KACST**, and **IAU** (`iau.edu.sa`).
+        """)
+        if st.button("🚀 Open Literature & Materials Explorer", key="btn_open_saudi_explorer", use_container_width=True):
+            st.session_state.current_technique = TECHNIQUES[5]
+            st.rerun()
+        render_sidebar_saudi_quick_search()
+        st.markdown("""
+        *Dedicated standalone studios: port 8502 (XPS), 8503 (XRD), 8504 (FTIR).*
         """)
 
     with st.expander("📖 Citation & Software Attribution", expanded=False):
@@ -858,6 +855,12 @@ elif technique.startswith("5"):
                     key="edx_dat"
                 )
             plt.close(fig_edx)
+
+# ==============================================================================
+# 6. SAUDI ALLIANCE CROSS-UNIVERSITY LITERATURE & REFERENCE EXPLORER
+# ==============================================================================
+elif technique.startswith("6"):
+    render_saudi_alliance_explorer()
 
 # ==============================================================================
 # GLOBAL SCIENTIFIC FOOTER

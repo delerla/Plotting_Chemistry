@@ -32,10 +32,20 @@ def match_benchmark_key(name_hint: str) -> Optional[str]:
         return "uio66_zr_framework"
     if "zif" in s or "sodalite" in s or "imidazolate" in s:
         return "zif8_sodalite_framework"
+    if "hkust" in s or "mof-199" in s or "paddle" in s:
+        return "hkust1_cu_framework"
+    if "cspbbr" in s or "cesium" in s:
+        return "cspbbr3_inorganic_perovskite"
     if "perovskite" in s or "fapbi" in s or "mapbi" in s or "lead" in s or "pb" in s:
         return "perovskite_fapbi3_solar"
     if "tio2" in s or "anatase" in s or "rutile" in s or "photocatal" in s:
         return "tio2_catalyst_photocatalysis"
+    if "cu2o" in s or "cuo" in s or ("copper" in s and "oxide" in s):
+        return "cu2o_photocatalyst"
+    if "graphene" in s or "rgo" in s or " go " in f" {s} ":
+        return "go_rgo_desalination_membrane"
+    if "mxene" in s or "ti3c2" in s:
+        return "mxene_ti3c2tx_energy"
     if "pan" in s or "nanofiber" in s or "cnf" in s or "cycliz" in s or "polymer" in s:
         return "pan_nanofibers_water_energy"
     return None
