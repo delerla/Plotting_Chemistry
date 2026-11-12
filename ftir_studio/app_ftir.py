@@ -7,8 +7,8 @@ Dedicated for: PAN/Polymers, MOFs & Carboxylate Frameworks, Solar Perovskites, a
 import sys
 from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent.parent
 PKG_DIR = Path(__file__).resolve().parent
-BASE_DIR = PKG_DIR.parent
 for _p in (str(PKG_DIR), str(BASE_DIR)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -43,6 +43,12 @@ try:
         render_ftir_stacked_plot,
         render_second_derivative_plot,
     )
+    from knowledge_base.saudi_research_databank import (
+        SAUDI_INSTITUTIONS,
+        SAUDI_RESEARCH_BENCHMARKS,
+        list_benchmarks_for_institution,
+    )
+    from modules.institutional_verifier import verify_against_saudi_databank
 except ImportError:
     from ftir_studio.knowledge_base import ALL_FTIR_DOMAINS, DOMAIN_OPTIONS
     from ftir_studio.knowledge_base.benchmark_data import generate_benchmark_ftir
@@ -60,6 +66,12 @@ except ImportError:
         render_ftir_stacked_plot,
         render_second_derivative_plot,
     )
+    from ftir_studio.knowledge_base.saudi_research_databank import (
+        SAUDI_INSTITUTIONS,
+        SAUDI_RESEARCH_BENCHMARKS,
+        list_benchmarks_for_institution,
+    )
+    from ftir_studio.modules.institutional_verifier import verify_against_saudi_databank
 
 
 st.set_page_config(
@@ -341,6 +353,21 @@ with st.sidebar:
     domain_presets = ALL_FTIR_DOMAINS[selected_domain]
     selected_preset_name = st.selectbox("Material Chemistry Preset:", list(domain_presets.keys()), key="ftir_preset_select")
     active_preset = domain_presets[selected_preset_name]
+
+    with st.expander("🇸🇦 Saudi Alliance Databank (KFUPM, KACST, KAUST, IAU)", expanded=False):
+        inst_choice = st.selectbox(
+            "Institution Focus:",
+            ["All Saudi Alliance Partners", "KAUST", "KFUPM", "KACST", "IAU (iau.edu.sa)"],
+            key="ftir_saudi_inst"
+        )
+        sub_code = inst_choice.split()[0] if "All" not in inst_choice else ""
+        bms = list_benchmarks_for_institution(sub_code) if sub_code else list(SAUDI_RESEARCH_BENCHMARKS.values())
+        bm_titles = [f"{b['institutions'][0]}: {b['material_name']}" for b in bms]
+        sel_idx = st.selectbox("Institutional References:", range(len(bm_titles)), format_func=lambda i: bm_titles[i], key="ftir_saudi_bm_select")
+        active_saudi_bm = bms[sel_idx]
+        st.markdown(f"**Pillar:** *{active_saudi_bm['pillar']}*")
+        st.markdown(f"**Partners:** {', '.join(active_saudi_bm['institutions'])}")
+        st.caption(f"**Key Citation:** {active_saudi_bm['primary_citation']}")
 
     st.markdown("### 2. Spectrum Data Source")
     uploaded_file = st.file_uploader(
@@ -694,6 +721,28 @@ with tab_deconv:
             )
             st.pyplot(fig_d2)
             plt.close(fig_d2)
+
+        # Saudi Research Alliance Cross-Auditing & Literature Verification
+        saudi_verif = verify_against_saudi_databank(
+            technique="FTIR",
+            fitted_components=fc["band_summary"],
+            material_hint=selected_preset_name
+        )
+        with st.expander(f"🏛️ Saudi Alliance Literature Benchmark: {saudi_verif['material_name']} ({saudi_verif['match_percentage']:.0f}% Match)", expanded=True):
+            st.markdown(f"""
+            <div style="background: #f8fafc; border-left: 5px solid {saudi_verif['verdict_color']}; padding: 10px 14px; border-radius: 6px; margin-bottom: 10px;">
+                <span style="font-weight: 700; color: {saudi_verif['verdict_color']}; font-size: 1.0rem;">Audit: {saudi_verif['verdict']}</span> 
+                <span style="font-size: 0.85rem; color: #64748b;">({saudi_verif['matched_count']}/{saudi_verif['total_ref_count']} verified vibrational bands, {saudi_verif['match_percentage']:.0f}% literature fidelity)</span><br>
+                <span style="font-size: 0.88rem; color: #1e293b; line-height: 1.45;">{saudi_verif['explanation']}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown(f"**Research Centers:** {', '.join(saudi_verif['institutions'])} | **Pillar:** *{saudi_verif['pillar']}*")
+            st.caption(f"**Primary Reference:** {saudi_verif['primary_citation']}")
+            if saudi_verif['matches']:
+                st.markdown("##### Correlated Literature Vibrational Modes")
+                m_df = pd.DataFrame(saudi_verif['matches'])
+                m_df.columns = ["Vibrational Mode", "Literature ν (cm⁻¹)", "Measured ν (cm⁻¹)", "Deviation |Δν| (cm⁻¹)", "Audit Status"]
+                st.dataframe(m_df, use_container_width=True)
 
         # Lazy Publication Export Center
         st.markdown("#### 📥 Publication Export Center")

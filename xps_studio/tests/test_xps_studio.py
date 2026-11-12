@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 # Add root project directory to sys.path
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
@@ -180,6 +180,26 @@ def test_custom_lineshapes_and_editable_plot():
     assert fig is not None
 
 
+def test_saudi_alliance_databank_verification():
+    """Tests cross-institution audit matching against KAUST, KFUPM, KACST, and IAU benchmarks."""
+    from modules.institutional_verifier import verify_against_saudi_databank
+    from knowledge_base.saudi_research_databank import SAUDI_INSTITUTIONS, list_benchmarks_for_institution
+
+    assert "KAUST" in SAUDI_INSTITUTIONS and "KFUPM" in SAUDI_INSTITUTIONS and "IAU" in SAUDI_INSTITUTIONS
+    kaust_bms = list_benchmarks_for_institution("KAUST")
+    assert len(kaust_bms) >= 3
+
+    # Test synthetic deconvolution output audit
+    mock_components = {
+        "Aromatic C-C": {"Binding_Energy_eV": 284.8, "Area_Percent": 65.0},
+        "Carboxylate O-C=O": {"Binding_Energy_eV": 288.6, "Area_Percent": 25.0},
+        "Defect Formate": {"Binding_Energy_eV": 286.2, "Area_Percent": 10.0},
+    }
+    audit = verify_against_saudi_databank("XPS", mock_components, material_hint="UiO-66")
+    assert audit["matched"] and audit["match_percentage"] >= 60.0
+    assert "KAUST" in audit["institutions"] and "KFUPM" in audit["institutions"]
+
+
 if __name__ == '__main__':
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
@@ -198,4 +218,6 @@ if __name__ == '__main__':
     print("  [PASS] Dual-Panel Publication Figure & LabPlot Matrix")
     test_custom_lineshapes_and_editable_plot()
     print("  [PASS] Custom Line Shapes (GL Mix), Equal FWHM & Editable Typography")
-    print("\n[ALL 7 XPS STUDIO TESTS PASSED SUCCESSFULLY!]")
+    test_saudi_alliance_databank_verification()
+    print("  [PASS] Saudi Research Alliance Databank & Cross-Audit Verification (KAUST/KFUPM/KACST/IAU)")
+    print("\n[ALL 8 XPS STUDIO TESTS PASSED SUCCESSFULLY!]")

@@ -211,6 +211,25 @@ with st.sidebar:
     st.session_state.current_technique = selected_tech
 
     st.markdown("---")
+    with st.expander("🇸🇦 Saudi Research Alliance (KAUST · KFUPM · KACST · IAU)", expanded=False):
+        st.markdown("""
+        **Cross-Institutional Research Intelligence**
+        
+        Tuned to flagship research programs across:
+        - **KAUST**: AMPM, KSC, KCC, WDRC
+        - **KFUPM**: IRC for Membranes & Water Security, IRC for Hydrogen & Energy Storage
+        - **KACST**: Energy & Water Research Institute, CREPP, NCCCU
+        - **IAU** (`iau.edu.sa`): Institute for Research and Medical Consultations (IRMC)
+
+        **Key Research Pillars:**
+        1. 🟢 *MOFs & Carbon Capture* (UiO-66, ZIF-8, HKUST-1)
+        2. ☀️ *Perovskite Solar Absorbers* (FAPbI3 / MAPbI3 & PbI2 photolysis)
+        3. ⚡ *Heterogeneous Catalysis* (TiO2 Anatase/Rutile P25, Cu/Cu2O)
+        4. 💧 *Desalination Membranes* (Electrospun PAN -> Carbon Nanofibers)
+
+        *Dedicated standalone studios on ports 8502 (XPS), 8503 (XRD), and 8504 (FTIR).*
+        """)
+
     with st.expander("📖 Citation & Software Attribution", expanded=False):
         st.markdown("""
         If you utilize this hub in academic publications, theses, or research reports, please cite:

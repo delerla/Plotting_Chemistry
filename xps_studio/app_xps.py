@@ -8,8 +8,10 @@ import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-if str(BASE_DIR) not in sys.path:
-    sys.path.insert(0, str(BASE_DIR))
+PKG_DIR = Path(__file__).resolve().parent
+for _p in (str(PKG_DIR), str(BASE_DIR)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,6 +38,12 @@ try:
     from core.deconvolution import fit_xps_components
     from core.interpretation import interpret_xps_chemistry
     from visualizer.plot_core_level import render_core_level_plot
+    from knowledge_base.saudi_research_databank import (
+        SAUDI_INSTITUTIONS,
+        SAUDI_RESEARCH_BENCHMARKS,
+        list_benchmarks_for_institution,
+    )
+    from modules.institutional_verifier import verify_against_saudi_databank
 except ImportError:
     from xps_studio.knowledge_base import ALL_DOMAINS
     from xps_studio.knowledge_base.benchmark_data import (
@@ -48,6 +56,12 @@ except ImportError:
     from xps_studio.core.deconvolution import fit_xps_components
     from xps_studio.core.interpretation import interpret_xps_chemistry
     from xps_studio.visualizer.plot_core_level import render_core_level_plot
+    from xps_studio.knowledge_base.saudi_research_databank import (
+        SAUDI_INSTITUTIONS,
+        SAUDI_RESEARCH_BENCHMARKS,
+        list_benchmarks_for_institution,
+    )
+    from xps_studio.modules.institutional_verifier import verify_against_saudi_databank
 
 # Page Configuration
 st.set_page_config(
@@ -162,6 +176,21 @@ with st.sidebar:
     preset_names = list(domain_presets.keys())
     selected_preset_name = st.selectbox("Spectral Chemistry Preset:", preset_names)
     active_preset = domain_presets[selected_preset_name]
+
+    with st.expander("🇸🇦 Saudi Alliance Databank (KFUPM, KACST, KAUST, IAU)", expanded=False):
+        inst_choice = st.selectbox(
+            "Institution Focus:",
+            ["All Saudi Alliance Partners", "KAUST", "KFUPM", "KACST", "IAU (iau.edu.sa)"],
+            key="xps_saudi_inst"
+        )
+        sub_code = inst_choice.split()[0] if "All" not in inst_choice else ""
+        bms = list_benchmarks_for_institution(sub_code) if sub_code else list(SAUDI_RESEARCH_BENCHMARKS.values())
+        bm_titles = [f"{b['institutions'][0]}: {b['material_name']}" for b in bms]
+        sel_idx = st.selectbox("Institutional References:", range(len(bm_titles)), format_func=lambda i: bm_titles[i], key="xps_saudi_bm_select")
+        active_saudi_bm = bms[sel_idx]
+        st.markdown(f"**Pillar:** *{active_saudi_bm['pillar']}*")
+        st.markdown(f"**Partners:** {', '.join(active_saudi_bm['institutions'])}")
+        st.caption(f"**Key Citation:** {active_saudi_bm['primary_citation']}")
 
     st.markdown("---")
     selected_theme = st.selectbox(
@@ -668,6 +697,28 @@ with col_main:
                 })
             quant_df = pd.DataFrame(table_rows)
             st.dataframe(quant_df, use_container_width=True)
+
+        # Saudi Research Alliance Cross-Auditing & Literature Verification
+        saudi_verif = verify_against_saudi_databank(
+            technique="XPS",
+            fitted_components=fc['comp_summary'],
+            material_hint=selected_preset_name
+        )
+        with st.expander(f"🏛️ Saudi Alliance Literature Benchmark: {saudi_verif['material_name']} ({saudi_verif['match_percentage']:.0f}% Match)", expanded=True):
+            st.markdown(f"""
+            <div style="background: #f8fafc; border-left: 5px solid {saudi_verif['verdict_color']}; padding: 10px 14px; border-radius: 6px; margin-bottom: 10px;">
+                <span style="font-weight: 700; color: {saudi_verif['verdict_color']}; font-size: 1.0rem;">Audit: {saudi_verif['verdict']}</span> 
+                <span style="font-size: 0.85rem; color: #64748b;">({saudi_verif['matched_count']}/{saudi_verif['total_ref_count']} verified peaks, {saudi_verif['match_percentage']:.0f}% literature fidelity)</span><br>
+                <span style="font-size: 0.88rem; color: #1e293b; line-height: 1.45;">{saudi_verif['explanation']}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown(f"**Research Centers:** {', '.join(saudi_verif['institutions'])} | **Pillar:** *{saudi_verif['pillar']}*")
+            st.caption(f"**Primary Reference:** {saudi_verif['primary_citation']}")
+            if saudi_verif['matches']:
+                st.markdown("##### Correlated Literature Spectral States")
+                m_df = pd.DataFrame(saudi_verif['matches'])
+                m_df.columns = ["State Assignment", "Literature BE (eV)", "Measured BE (eV)", "Deviation |ΔBE| (eV)", "Audit Status"]
+                st.dataframe(m_df, use_container_width=True)
 
         # ----------------------------------------------------------------------
         # LAZY PUBLICATION EXPORT CENTER (KEEPS PC FAST DURING INTERACTION!)

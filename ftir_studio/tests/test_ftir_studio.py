@@ -6,11 +6,9 @@ Authored & Maintained by Dr. Deler Langenberg (2026)
 import sys
 from pathlib import Path
 
-PKG_DIR = Path(__file__).resolve().parent.parent
-BASE_DIR = PKG_DIR.parent
-for _p in (str(PKG_DIR), str(BASE_DIR)):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -118,7 +116,21 @@ def run_suite():
     plt.close(fig_d2)
     print("  [PASS] 2nd-Deriv Auto-Seeding, Deconvolution/Stacked Plots & LabPlot/600 DPI Exports")
 
-    print("\n[ALL 5 FTIR STUDIO TESTS PASSED SUCCESSFULLY!]")
+    # 6. Saudi Research Alliance Databank & Cross-Audit Verification (KAUST/KFUPM/KACST/IAU)
+    from modules.institutional_verifier import verify_against_saudi_databank
+    from knowledge_base.saudi_research_databank import SAUDI_INSTITUTIONS, list_benchmarks_for_institution
+
+    assert "IAU" in SAUDI_INSTITUTIONS and "KAUST" in SAUDI_INSTITUTIONS
+    iau_bms = list_benchmarks_for_institution("IAU")
+    assert len(iau_bms) >= 2
+
+    # Audit PAN FTIR fitted summary against KFUPM / KAUST / IAU benchmark
+    audit_pan = verify_against_saudi_databank("FTIR", summary_pan, material_hint="PAN Nanofibers")
+    assert audit_pan["matched"] and audit_pan["match_percentage"] >= 60.0
+    assert "KFUPM" in audit_pan["institutions"] and "IAU" in audit_pan["institutions"]
+    print("  [PASS] Saudi Research Alliance Databank & Cross-Audit Verification (KAUST/KFUPM/KACST/IAU)")
+
+    print("\n[ALL 6 FTIR STUDIO TESTS PASSED SUCCESSFULLY!]")
 
 
 if __name__ == "__main__":

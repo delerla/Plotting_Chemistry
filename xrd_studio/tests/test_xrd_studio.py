@@ -6,11 +6,9 @@ Authored & Maintained by Dr. Deler Langenberg (2026)
 import sys
 from pathlib import Path
 
-PKG_DIR = Path(__file__).resolve().parent.parent
-BASE_DIR = PKG_DIR.parent
-for _p in (str(PKG_DIR), str(BASE_DIR)):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -120,7 +118,21 @@ def run_suite():
     plt.close(fig_wh)
     print("  [PASS] Dual-Panel Deconvolution, Stacked Waterfall, Williamson–Hall & LabPlot Exports")
 
-    print("\n[ALL 6 XRD STUDIO TESTS PASSED SUCCESSFULLY!]")
+    # 7. Saudi Research Alliance Databank & Cross-Audit Verification (KAUST/KFUPM/KACST/IAU)
+    from modules.institutional_verifier import verify_against_saudi_databank
+    from knowledge_base.saudi_research_databank import SAUDI_INSTITUTIONS, list_benchmarks_for_institution
+
+    assert "KFUPM" in SAUDI_INSTITUTIONS and "KACST" in SAUDI_INSTITUTIONS and "IAU" in SAUDI_INSTITUTIONS
+    kfupm_bms = list_benchmarks_for_institution("KFUPM")
+    assert len(kfupm_bms) >= 3
+
+    # Test TiO2 P25 Bragg audit against KAUST/KFUPM/IAU reference
+    audit_tio2 = verify_against_saudi_databank("XRD", peak_summary, material_hint="TiO2 Anatase")
+    assert audit_tio2["matched"] and audit_tio2["match_percentage"] >= 60.0
+    assert "IAU" in audit_tio2["institutions"] and "KAUST" in audit_tio2["institutions"]
+    print("  [PASS] Saudi Research Alliance Databank & Cross-Audit Verification (KAUST/KFUPM/KACST/IAU)")
+
+    print("\n[ALL 7 XRD STUDIO TESTS PASSED SUCCESSFULLY!]")
 
 
 if __name__ == "__main__":
