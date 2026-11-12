@@ -151,7 +151,8 @@ def render_saudi_alliance_explorer(active_technique: Optional[str] = None):
             with tab_xrd:
                 if "xrd_benchmarks" in bm:
                     xrd = bm["xrd_benchmarks"]
-                    st.markdown(f"**Radiation Wavelength:** $\\lambda = {xrd.get('wavelength_A', 1.54060):.5f}\\text{ Å}$ ($Cu\\text{ }K\\alpha$)")
+                    wl = float(xrd.get("wavelength_A", 1.54060))
+                    st.markdown(f"**Radiation Wavelength:** λ = {wl:.5f} Å (Cu Kα, 1.54060 Å)")
                     df_xrd = pd.DataFrame(xrd.get("reflections", []))
                     if not df_xrd.empty:
                         df_xrd.rename(columns={
