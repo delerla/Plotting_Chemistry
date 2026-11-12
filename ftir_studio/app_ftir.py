@@ -884,6 +884,12 @@ with tab_stacked:
 
 
 # ==============================================================================
+# COMMUNITY REVIEWS, USER WISHES & PEER FEEDBACK
+# ==============================================================================
+from modules.feedback_module import render_community_reviews
+render_community_reviews(active_app_name="FTIR Studio")
+
+# ==============================================================================
 # INSTITUTIONAL FOOTER
 # ==============================================================================
 st.markdown("""

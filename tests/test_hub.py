@@ -148,6 +148,24 @@ def test_ragged_csv_and_nan_tolerance():
     assert ax.get_xlim()[0] < ax.get_xlim()[1]
 
 
+def test_community_feedback_and_reviews():
+    from modules.feedback_module import get_reviews_file_path, load_reviews, add_review
+    from knowledge_base.saudi_research_databank import search_saudi_databank
+    
+    fp = get_reviews_file_path()
+    revs = load_reviews(fp)
+    assert len(revs) >= 4, f"Expected at least 4 initial reviews, got {len(revs)}"
+    
+    # Verify institutions represented
+    insts = {r.get('institution') for r in revs}
+    assert any("KAUST" in i for i in insts), "KAUST review missing"
+    assert any("KFUPM" in i for i in insts), "KFUPM review missing"
+    
+    # Test databank search integration
+    uio_matches = search_saudi_databank("UiO-66")
+    assert len(uio_matches) >= 1, "UiO-66 search failed"
+
+
 if __name__ == '__main__':
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
@@ -168,4 +186,6 @@ if __name__ == '__main__':
     print("  [PASS] SEM Particle Sizing & EDX Microanalysis")
     test_zip_bundle_export()
     print("  [PASS] ZIP Package & LabPlot ASCII Matrix Bundling")
-    print("\n[ALL 8 TESTS PASSED SUCCESSFULLY!]")
+    test_community_feedback_and_reviews()
+    print("  [PASS] Community Reviews, Wishes & Search Databank Integration")
+    print("\n[ALL 9 TESTS PASSED SUCCESSFULLY!]")

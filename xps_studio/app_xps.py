@@ -780,6 +780,12 @@ with col_main:
         plt.close(fig_xps)
 
 # ==============================================================================
+# COMMUNITY REVIEWS, USER WISHES & PEER FEEDBACK
+# ==============================================================================
+from modules.feedback_module import render_community_reviews
+render_community_reviews(active_app_name="XPS Studio")
+
+# ==============================================================================
 # INSTITUTIONAL FOOTER
 # ==============================================================================
 st.markdown("""

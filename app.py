@@ -863,6 +863,12 @@ elif technique.startswith("6"):
     render_saudi_alliance_explorer()
 
 # ==============================================================================
+# COMMUNITY REVIEWS, USER WISHES & PEER FEEDBACK
+# ==============================================================================
+from modules.feedback_module import render_community_reviews
+render_community_reviews(active_app_name="Materials Characterization Hub")
+
+# ==============================================================================
 # GLOBAL SCIENTIFIC FOOTER
 # ==============================================================================
 st.markdown("""

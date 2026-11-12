@@ -1,0 +1,50 @@
+[
+  {
+    "id": "rev_001",
+    "name": "Dr. Tariq Al-Ghamdi",
+    "role": "Postdoctoral Fellow (AMPM Center)",
+    "institution": "KAUST",
+    "rating": 5,
+    "category": "Academic Review",
+    "subject": "UiO-66 & ZIF-8 Deconvolution Precision",
+    "comment": "The automated Shirley baseline subtraction and Deacon carboxylate splitting calculation (Δν ≈ 186 cm⁻¹) saved our team countless hours in analyzing linker defect concentrations for CO2 capture papers. Highly recommended!",
+    "date": "2026-10-18",
+    "wishes": "A batch deconvolution script for 50+ spectra would be fantastic."
+  },
+  {
+    "id": "rev_002",
+    "name": "Eng. Sarah Al-Otaibi",
+    "role": "PhD Candidate (IRC for Membranes)",
+    "institution": "KFUPM",
+    "rating": 5,
+    "category": "Academic Review",
+    "subject": "Essential tool for PAN electrospun nanofiber characterization",
+    "comment": "Being able to quantify both the N 1s pyridinic/pyrrolic conversion in XPS and the Extent of Stabilization (E_s) in FTIR within seconds has streamlined our membrane fabrication workflows. Beautiful 600 DPI export!",
+    "date": "2026-10-29",
+    "wishes": "Please consider adding Raman D/G band fitting for carbonized nanofibers."
+  },
+  {
+    "id": "rev_003",
+    "name": "Dr. Fahad Al-Mutairi",
+    "role": "Senior Research Scientist (CREPP)",
+    "institution": "KACST",
+    "rating": 5,
+    "category": "Wishlist & Feature Request",
+    "subject": "In-situ high-temperature XRD phase tracking",
+    "comment": "The Williamson–Hall microstrain separation and Spurr–Myers Anatase/Rutile quantification are rock solid and match our Rigaku SmartLab outputs perfectly.",
+    "date": "2026-11-04",
+    "wishes": "Wish: Add temperature-resolved 3D waterfall surface plots for in-situ calcination studies."
+  },
+  {
+    "id": "rev_004",
+    "name": "Prof. Reem Al-Dosari",
+    "role": "Associate Professor (Chemistry Dept / IRMC)",
+    "institution": "IAU (iau.edu.sa)",
+    "rating": 5,
+    "category": "Academic Review",
+    "subject": "Ideal teaching & research platform for graduate students",
+    "comment": "Our graduate students at IAU use this hub weekly for photocatalytic TiO2 and dye degradation kinetics. The smart format parser handles messy multi-line spectrometer exports with zero configuration.",
+    "date": "2026-11-09",
+    "wishes": "Adding UV-Vis diffuse reflectance Tauc plot deconvolution for direct vs indirect bandgap."
+  }
+]
