@@ -486,10 +486,10 @@ Peaks Resolved: {len(deconv_res['peaks'])}
 
         zip_bytes = build_analysis_bundle_zip(
             fig=fig,
-            df_labplot=active_export_df,
-            metrics={"domain": selected_domain, "mode": analysis_mode},
-            technique="UV-Vis",
-            summary_text=active_summary
+            base_name="UV_Vis_Analysis",
+            labplot_df=active_export_df,
+            summary_data={"domain": selected_domain, "mode": analysis_mode},
+            title=f"UV-Vis Analysis: {selected_domain}"
         )
         st.download_button(
             "📦 Download Complete Publication Package (.ZIP)",

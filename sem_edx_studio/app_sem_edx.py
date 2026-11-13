@@ -442,10 +442,10 @@ Stoichiometry: {stoich}
 
         zip_bytes = build_analysis_bundle_zip(
             fig=fig,
-            df_labplot=active_export_df,
-            metrics={"domain": selected_domain, "mode": analysis_mode},
-            technique="SEM-EDX",
-            summary_text=active_summary
+            base_name="SEM_EDX_Analysis",
+            labplot_df=active_export_df,
+            summary_data={"domain": selected_domain, "mode": analysis_mode},
+            title=f"SEM-EDX Analysis: {selected_domain}"
         )
         st.download_button(
             "📦 Download Complete Publication Package (.ZIP)",
