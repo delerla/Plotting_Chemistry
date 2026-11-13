@@ -129,6 +129,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 TECHNIQUES = [
+    "0. 🌐 Scientific Gateway & Multi-Studio Portal",
     "1. FTIR Spectroscopy",
     "2. XRD Crystallography",
     "3. UV-Vis & Dye Kinetics",
@@ -238,6 +239,7 @@ with st.sidebar:
         safe_page_link("pages/2_XRD_Studio.py", label="XRD Crystallography Studio", icon="💎")
         safe_page_link("pages/3_FTIR_Studio.py", label="FTIR Spectroscopy Studio", icon="🧪")
         safe_page_link("pages/4_UV_Vis_Studio.py", label="UV-Vis & Photokinetics Studio", icon="☀️")
+        safe_page_link("pages/5_SEM_EDX_Studio.py", label="SEM-EDX Microstructural Studio", icon="🔬")
 
     with st.expander("🇸🇦 Saudi Research Alliance (KAUST · KFUPM · KACST · IAU)", expanded=False):
         st.markdown("""
@@ -246,11 +248,11 @@ with st.sidebar:
         Audited benchmarks spanning **KAUST**, **KFUPM**, **KACST**, and **IAU** (`iau.edu.sa`).
         """)
         if st.button("🚀 Open Literature & Materials Explorer", key="btn_open_saudi_explorer", use_container_width=True):
-            st.session_state.current_technique = TECHNIQUES[5]
+            st.session_state.current_technique = TECHNIQUES[6]
             st.rerun()
         render_sidebar_saudi_quick_search()
         st.markdown("""
-        *Dedicated standalone studios: port 8502 (XPS), 8503 (XRD), 8504 (FTIR).*
+        *Dedicated standalone studios: port 8502 (XPS), 8503 (XRD), 8504 (FTIR), 8505 (UV-Vis), 8506 (SEM-EDX).*
         """)
 
     with st.expander("📖 Citation & Software Attribution", expanded=False):
@@ -314,9 +316,182 @@ if "smart_data" in st.session_state:
 technique = st.session_state.current_technique
 
 # ==============================================================================
+# 0. EXECUTIVE SCIENTIFIC GATEWAY & MULTI-STUDIO SWITCHBOARD
+# ==============================================================================
+if technique.startswith("0"):
+    st.markdown('<div class="main-header">🌐 Materials Characterization & Computational Spectroscopic Analytics Hub</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Unified Academic & Industrial Gateway: Machine-Learning Assisted Deconvolution, Crystallography, Reaction Kinetics, and Microanalysis</div>', unsafe_allow_html=True)
+
+    # Hero Banner
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f2b48 100%); color: #f8fafc; border-radius: 10px; padding: 22px 26px; margin-bottom: 1.5rem; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <span class="badge" style="background:#0284c7; color:#ffffff; font-size:0.75rem;">RESEARCH GATEWAY</span>
+                <span class="badge" style="background:#16a34a; color:#ffffff; font-size:0.75rem;">ORIGINLAB & LABPLOT INTEROPERABILITY</span>
+                <span class="badge" style="background:#7c3aed; color:#ffffff; font-size:0.75rem;">SAUDI RESEARCH ALLIANCE</span>
+                <h2 style="color: #38bdf8; margin: 10px 0 6px 0; font-size: 1.6rem; font-weight: 800;">Cross-Technique Spectroscopic & Microstructural Intelligence</h2>
+                <p style="color: #cbd5e1; font-size: 0.95rem; margin: 0; max-width: 820px; line-height: 1.45;">
+                    Empowering computational materials chemistry with automated baseline subtraction (AsLS / Shirley),
+                    crystallite sizing (Scherrer & Williamson–Hall), reaction kinetics (PFO / PSO / Weber-Morris),
+                    optical bandgaps (Direct/Indirect Tauc & Urbach tail), and computer vision particle morphology.
+                </p>
+            </div>
+            <div style="text-align: right; background: rgba(255,255,255,0.06); padding: 12px 18px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Platform Owner & Lead</div>
+                <div style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">Dr. Deler Langenberg</div>
+                <div style="font-size: 0.78rem; color: #38bdf8; margin-top: 2px;">Materials Chemistry Specialist</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Section 1: Five Dedicated Intelligence Studios (Interactive Cards)
+    st.markdown("### 🧭 Five Specialized Scientific Intelligence Studios")
+    st.markdown("*Select a dedicated platform below to launch its isolated high-performance environment or jump to its built-in module:*")
+
+    card_c1, card_c2 = st.columns(2)
+
+    with card_c1:
+        # Card 1: FTIR
+        with st.container(border=True):
+            st.markdown("#### 🧪 FTIR Spectroscopy Studio")
+            st.markdown("**Domain:** Attenuated Total Reflectance (ATR) Crystal Correction, AsLS / Rubberband Baseline Subtraction, 2nd-Derivative Shoulder Peak Discovery, and PAN Nanofiber Cyclization Index.")
+            st.caption("Engine: SciPy / AsLS Baseline / Lorentz Band Deconvolution")
+            btn_f1, btn_f2 = st.columns([1.5, 1])
+            with btn_f1:
+                safe_page_link("pages/3_FTIR_Studio.py", label="🚀 Launch Dedicated FTIR Studio", icon="🧪")
+            with btn_f2:
+                if st.button("📊 Open In-Hub Module", key="btn_gate_ftir", use_container_width=True):
+                    st.session_state.current_technique = TECHNIQUES[1]
+                    st.rerun()
+
+        # Card 2: UV-Vis
+        with st.container(border=True):
+            st.markdown("#### ☀️ UV-Vis & Photokinetics Studio")
+            st.markdown("**Domain:** Multi-Order Reaction Kinetics (0th, Pseudo-1st, Pseudo-2nd Order, Weber-Morris), AIC/BIC Model Ranking, and Direct/Indirect Tauc Plot Bandgap ($E_g$) & Urbach Tail ($E_U$).")
+            st.caption("Engine: SciPy Kinetics Regression / Inflection Edge Extrapolation")
+            btn_u1, btn_u2 = st.columns([1.5, 1])
+            with btn_u1:
+                safe_page_link("pages/4_UV_Vis_Studio.py", label="🚀 Launch Dedicated UV-Vis Studio", icon="☀️")
+            with btn_u2:
+                if st.button("📊 Open In-Hub Module", key="btn_gate_uv", use_container_width=True):
+                    st.session_state.current_technique = TECHNIQUES[3]
+                    st.rerun()
+
+        # Card 3: SEM-EDX
+        with st.container(border=True):
+            st.markdown("#### 🔬 SEM-EDX Microstructural Studio")
+            st.markdown("**Domain:** Computer Vision Particle Segmentation (Otsu & Distance-Watershed), Log-Normal / Weibull Particle Size Distributions ($d_{10}, d_{50}, d_{90}$, PDI), and EDX Stoichiometry.")
+            st.caption("Engine: OpenCV / scikit-image / Multi-Element Peak Deconvolution")
+            btn_s1, btn_s2 = st.columns([1.5, 1])
+            with btn_s1:
+                safe_page_link("pages/5_SEM_EDX_Studio.py", label="🚀 Launch Dedicated SEM-EDX Studio", icon="🔬")
+            with btn_s2:
+                if st.button("📊 Open In-Hub Module", key="btn_gate_sem", use_container_width=True):
+                    st.session_state.current_technique = TECHNIQUES[5]
+                    st.rerun()
+
+    with card_c2:
+        # Card 4: XRD
+        with st.container(border=True):
+            st.markdown("#### 💎 XRD Crystallography Studio")
+            st.markdown("**Domain:** Cu Kα2 Stripping, Multi-Peak Pseudo-Voigt Profile Deconvolution, Scherrer Crystallite Sizing ($D$), Williamson–Hall Microstrain Separation ($\epsilon$), and Spurr–Myers Phase Quantification.")
+            st.caption("Engine: SciPy / lmfit Multi-Peak Diffraction Profiling")
+            btn_x1, btn_x2 = st.columns([1.5, 1])
+            with btn_x1:
+                safe_page_link("pages/2_XRD_Studio.py", label="🚀 Launch Dedicated XRD Studio", icon="💎")
+            with btn_x2:
+                if st.button("📊 Open In-Hub Module", key="btn_gate_xrd", use_container_width=True):
+                    st.session_state.current_technique = TECHNIQUES[2]
+                    st.rerun()
+
+        # Card 5: XPS
+        with st.container(border=True):
+            st.markdown("#### ⚡ XPS Deep-Intelligence Studio")
+            st.markdown("**Domain:** Iterative Shirley & Tougaard Baseline Extraction, High-Resolution Voigt Multi-Component Deconvolution, Automated C 1s Charge Referencing (@ 284.8 eV), and Defect Chemistry.")
+            st.caption("Engine: lmfit Voigt / Shirley Non-Linear Least Squares")
+            btn_xp1, btn_xp2 = st.columns([1.5, 1])
+            with btn_xp1:
+                safe_page_link("pages/1_XPS_Studio.py", label="🚀 Launch Dedicated XPS Studio", icon="⚡")
+            with btn_xp2:
+                if st.button("📊 Open In-Hub Module", key="btn_gate_xps", use_container_width=True):
+                    st.session_state.current_technique = TECHNIQUES[4]
+                    st.rerun()
+
+        # Card 6: Saudi Alliance Databank
+        with st.container(border=True):
+            st.markdown("#### 🇸🇦 Saudi Research Alliance & Literature Databank")
+            st.markdown("**Domain:** Audited Reference Spectroscopic Benchmarks spanning **KAUST**, **KFUPM**, **KACST**, and **IAU**. Curated datasets for MOFs, Solar Perovskites, and Catalysts.")
+            st.caption("Reference Hub: KAUST · KFUPM · KACST · IAU")
+            btn_sa1, btn_sa2 = st.columns([1.5, 1])
+            with btn_sa1:
+                if st.button("🔍 Explore Reference Databank", key="btn_gate_saudi_main", use_container_width=True):
+                    st.session_state.current_technique = TECHNIQUES[6]
+                    st.rerun()
+            with btn_sa2:
+                st.caption("DOI Benchmarks")
+
+    st.markdown("---")
+
+    # Section 2: Universal Multi-File Dropzone & Auto-Triage
+    st.markdown("### 📂 Universal Multi-File Dropzone & Physics Auto-Detection")
+    st.markdown("Drop any experimental raw data file (`.xlsx`, `.dat`, `.csv`, `.txt`, `.asc`, `.dpt`, `.xy`, `.png`, `.jpg`, `.tif`). Our physics engine inspects the spectral coordinates and automatically triages the data to the matching studio.")
+
+    hub_upload = st.file_uploader(
+        "Upload Analytical File for Instant Auto-Detection:",
+        type=ALL_SUPPORTED_EXTS,
+        key="gateway_smart_uploader"
+    )
+
+    if hub_upload is not None:
+        raw_hub_bytes = hub_upload.read()
+        p_df, p_img, p_meta = load_smart_file(raw_hub_bytes, filename=hub_upload.name)
+        st.session_state["smart_data"] = {
+            'df': p_df,
+            'img': p_img,
+            'meta': p_meta
+        }
+        
+        detected_t = p_meta.get("detected_technique", "Unknown")
+        st.success(f"**Auto-Detected:** {detected_t} ({p_meta['confidence']*100:.0f}% confidence) — {p_meta['reason']}")
+        
+        col_g1, col_g2 = st.columns(2)
+        with col_g1:
+            if "FTIR" in detected_t:
+                if st.button("🚀 Process in FTIR Module", use_container_width=True):
+                    st.session_state.current_technique = TECHNIQUES[1]
+                    st.rerun()
+            elif "XRD" in detected_t:
+                if st.button("🚀 Process in XRD Module", use_container_width=True):
+                    st.session_state.current_technique = TECHNIQUES[2]
+                    st.rerun()
+            elif "UV-Vis" in detected_t:
+                if st.button("🚀 Process in UV-Vis Module", use_container_width=True):
+                    st.session_state.current_technique = TECHNIQUES[3]
+                    st.rerun()
+            elif "XPS" in detected_t:
+                if st.button("🚀 Process in XPS Module", use_container_width=True):
+                    st.session_state.current_technique = TECHNIQUES[4]
+                    st.rerun()
+            elif "SEM" in detected_t:
+                if st.button("🚀 Process in SEM-EDX Module", use_container_width=True):
+                    st.session_state.current_technique = TECHNIQUES[5]
+                    st.rerun()
+
+        with col_g2:
+            st.caption(f"File specs: {p_meta.get('rows', 0)} rows, format {p_meta.get('format', 'unknown')}")
+
+    st.markdown("---")
+
+    # Section 3: Literature & Cross-Technique Correlation Matrix
+    st.markdown("### 📚 Literature Benchmarks & Institutional Correlations")
+    render_saudi_alliance_explorer()
+
+# ==============================================================================
 # 1. FTIR SPECTROSCOPY MODULE
 # ==============================================================================
-if technique.startswith("1"):
+elif technique.startswith("1"):
     st.markdown('<div class="main-header">Fourier-Transform Infrared (FTIR) Spectroscopy</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Multi-sample spectral stacking, Savitzky-Golay filtering, normalization, and vibrational band deconvolution.</div>', unsafe_allow_html=True)
 
@@ -832,6 +1007,14 @@ elif technique.startswith("4"):
 elif technique.startswith("5"):
     st.markdown('<div class="main-header">SEM Micrograph & EDX Elemental Microanalysis</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Particle segmentation, Otsu thresholding, diameter distributions, and EDX characteristic line elemental quantification.</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 0.8rem;">
+        <strong>🔬 Dedicated SEM-EDX Platform Available:</strong> 
+        Need distance-watershed particle segmentation, Log-Normal/Weibull particle size distributions (d10/d50/d90, PDI), or quantitative EDX stoichiometry?
+    </div>
+    """, unsafe_allow_html=True)
+    safe_page_link("pages/5_SEM_EDX_Studio.py", label="🚀 Launch Dedicated SEM-EDX Microstructural Studio (1-Click Stream Page)", icon="🔬")
 
     tab_sem, tab_edx = st.tabs(["📷 SEM Particle Sizing", "⚡ EDX Spectroscopy"])
 
