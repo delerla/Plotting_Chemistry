@@ -217,9 +217,9 @@ with st.sidebar:
     st.markdown("---")
     with st.expander("🧭 Dedicated Intelligence Studios", expanded=True):
         st.markdown("*1-Click stream links to domain-specific platforms:*")
-        st.page_link("pages/1_⚡_XPS_Studio.py", label="XPS Intelligence Studio", icon="⚡")
-        st.page_link("pages/2_💎_XRD_Studio.py", label="XRD Crystallography Studio", icon="💎")
-        st.page_link("pages/3_🧪_FTIR_Studio.py", label="FTIR Spectroscopy Studio", icon="🧪")
+        st.page_link("pages/1_XPS_Studio.py", label="XPS Intelligence Studio", icon="⚡")
+        st.page_link("pages/2_XRD_Studio.py", label="XRD Crystallography Studio", icon="💎")
+        st.page_link("pages/3_FTIR_Studio.py", label="FTIR Spectroscopy Studio", icon="🧪")
 
     with st.expander("🇸🇦 Saudi Research Alliance (KAUST · KFUPM · KACST · IAU)", expanded=False):
         st.markdown("""
@@ -308,7 +308,7 @@ if technique.startswith("1"):
         Need ATR crystal correction, AsLS/Rubberband baseline subtraction, 2nd-derivative shoulder resolution, or PAN/MOF deconvolution?
     </div>
     """, unsafe_allow_html=True)
-    st.page_link("pages/3_🧪_FTIR_Studio.py", label="🚀 Launch Dedicated FTIR Spectroscopy Studio (1-Click Stream Page)", icon="🧪")
+    st.page_link("pages/3_FTIR_Studio.py", label="🚀 Launch Dedicated FTIR Spectroscopy Studio (1-Click Stream Page)", icon="🧪")
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
@@ -445,7 +445,7 @@ elif technique.startswith("2"):
         Need Rietveld/profile deconvolution, Williamson–Hall microstrain separation, Cu Kα2 stripping, or Spurr–Myers phase quantification?
     </div>
     """, unsafe_allow_html=True)
-    st.page_link("pages/2_💎_XRD_Studio.py", label="🚀 Launch Dedicated XRD Crystallography Studio (1-Click Stream Page)", icon="💎")
+    st.page_link("pages/2_XRD_Studio.py", label="🚀 Launch Dedicated XRD Crystallography Studio (1-Click Stream Page)", icon="💎")
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
@@ -696,7 +696,7 @@ elif technique.startswith("4"):
         Need domain-specific deconvolution for <b>MOFs</b> (UiO-66, ZIF-8, HKUST-1 defect analysis), <b>Solar Perovskites</b> (Pb⁰ photolysis defect detection, I/Pb ratios), or <b>PAN Nanofibers</b> (Cyclization Index)?
     </div>
     """, unsafe_allow_html=True)
-    st.page_link("pages/1_⚡_XPS_Studio.py", label="🚀 Launch Dedicated XPS Intelligence Studio (1-Click Stream Page)", icon="⚡")
+    st.page_link("pages/1_XPS_Studio.py", label="🚀 Launch Dedicated XPS Intelligence Studio (1-Click Stream Page)", icon="⚡")
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
