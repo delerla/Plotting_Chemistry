@@ -232,9 +232,9 @@ with st.sidebar:
 # MAIN PAGE HEADER
 # ==============================================================================
 try:
-    st.page_link("app.py", label="← Return to Materials Characterization Multi-Technique Hub", icon="🏠")
+    st.page_link("app.py", label="← Return to Materials Characterization Master Gateway", icon="🏠")
 except Exception:
-    st.markdown('<a href="/" target="_self" style="display:inline-block; padding: 6px 14px; margin-bottom: 8px; background-color: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem;">🏠 ← Return to Materials Characterization Multi-Technique Hub</a>', unsafe_allow_html=True)
+    st.markdown('<a href="https://delerla-plotting-chemistry-app-gu8u0i.streamlit.app/" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding: 7px 16px; margin-bottom: 12px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #38bdf8 !important; border: 1px solid #334155; border-radius: 6px; text-decoration: none !important; font-weight: 600; font-size: 0.88rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🏠 ⟵ Return to Master Materials Characterization Gateway</a>', unsafe_allow_html=True)
 
 st.markdown("""
 <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.65rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
