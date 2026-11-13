@@ -264,6 +264,16 @@ def parse_delimited_text(text: str) -> pd.DataFrame:
         elif 'unit' in label:
             origin_units = row[1:] if len(row) > num_cols else row
 
+    # Also detect OriginLab 4-row header with column designations (e.g., A(X), B(Y), etc.)
+    if not origin_long_names and len(header_rows) >= 2:
+        for idx_h, h_row in enumerate(header_rows):
+            if len(h_row) == num_cols and any(re.search(r'\([xyzXYZ]\)', item) for item in h_row):
+                if idx_h + 1 < len(header_rows) and len(header_rows[idx_h + 1]) == num_cols:
+                    origin_long_names = header_rows[idx_h + 1]
+                if idx_h + 2 < len(header_rows) and len(header_rows[idx_h + 2]) == num_cols:
+                    origin_units = header_rows[idx_h + 2]
+                break
+
     if origin_long_names and len(origin_long_names) == num_cols:
         for idx, nm in enumerate(origin_long_names):
             u = origin_units[idx] if origin_units and idx < len(origin_units) else ""

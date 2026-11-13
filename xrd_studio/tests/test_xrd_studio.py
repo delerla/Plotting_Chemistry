@@ -22,7 +22,7 @@ from core.peak_fitting import auto_detect_xrd_peaks, bragg_d_spacing, fit_xrd_pe
 from core.williamson_hall import compute_williamson_hall
 from knowledge_base import ALL_XRD_DOMAINS
 from knowledge_base.benchmark_data import generate_benchmark_xrd
-from modules.export_utils import get_figure_bytes, get_labplot_ascii_bytes
+from modules.export_utils import get_figure_bytes, get_labplot_ascii_bytes, get_originlab_ascii_bytes
 from visualizer.plot_xrd import (
     render_williamson_hall_plot,
     render_xrd_deconvolution_plot,
@@ -107,7 +107,9 @@ def run_suite():
     )
     png_bytes = get_figure_bytes(fig_dec, "png", dpi=600)
     dat_bytes = get_labplot_ascii_bytes(lp_dec, title="XRD Test Matrix")
+    origin_bytes = get_originlab_ascii_bytes(lp_dec, title="XRD Test Matrix")
     assert len(png_bytes) > 10000 and b"Observed_Intensity" in dat_bytes
+    assert len(origin_bytes) > 0 and b"A(X)" in origin_bytes and b"B(Y)" in origin_bytes
     plt.close(fig_dec)
 
     fig_stack, lp_stack = render_xrd_stacked_plot(df_p25, list(df_p25.columns[1:]), theme="ACS")

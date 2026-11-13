@@ -23,6 +23,8 @@ from modules.export_utils import (
     build_analysis_bundle_zip,
     get_figure_bytes,
     get_labplot_ascii_bytes,
+    get_originlab_ascii_bytes,
+    get_originlab_excel_bytes,
 )
 from modules.file_parser import load_smart_file
 
@@ -441,6 +443,7 @@ with st.sidebar:
 # ==============================================================================
 # MAIN WORKSPACE HEADER
 # ==============================================================================
+st.page_link("app.py", label="← Return to Materials Characterization Multi-Technique Hub", icon="🏠")
 st.markdown('<div class="xrd-header">💎 XRD Studio: X-Ray Diffraction Profile & Microstrain Suite</div>', unsafe_allow_html=True)
 st.markdown(f"""
 <div style="margin-bottom: 1.0rem;">
@@ -840,47 +843,64 @@ with tab_deconv:
             from modules.saudi_search_ui import render_saudi_alliance_explorer
             render_saudi_alliance_explorer(active_technique="XRD")
 
-        # Lazy Publication Export Center
+        # ----------------------------------------------------------------------
+        # PUBLICATION EXPORT CENTER
+        # ----------------------------------------------------------------------
         st.markdown("#### 📥 Publication Export Center")
-        if "xrd_export_cache" not in st.session_state:
-            if st.button("📦 Prepare Publication Package (600 DPI PNG, Vector SVG, PDF, LabPlot .DAT)", type="primary", use_container_width=True):
-                with st.spinner("Rendering 600 DPI raster & vector formats..."):
-                    clean_slug = fc["sample_name"].replace(" ", "_").replace("/", "_")
-                    zip_bytes = build_analysis_bundle_zip(
-                        fig_xrd,
-                        base_name=f"XRD_{clean_slug}",
-                        labplot_df=labplot_df,
-                        summary_data=quant_df,
-                        title=plot_cfg["title"] or f"XRD Profile Deconvolution: {fc['sample_name']}",
-                        units={"TwoTheta_deg": "deg", "Observed_Intensity": "Counts"},
-                    )
-                    st.session_state["xrd_export_cache"] = {
-                        "zip": zip_bytes,
-                        "png": get_figure_bytes(fig_xrd, "png", dpi=600),
-                        "svg": get_figure_bytes(fig_xrd, "svg"),
-                        "pdf": get_figure_bytes(fig_xrd, "pdf"),
-                        "dat": get_labplot_ascii_bytes(labplot_df, title="XRD Studio Profile Matrix"),
-                    }
-                    st.rerun()
-        else:
-            ec = st.session_state["xrd_export_cache"]
+        clean_slug = fc["sample_name"].replace(" ", "_").replace("/", "_")
+        zip_bytes = build_analysis_bundle_zip(
+            fig_xrd,
+            base_name=f"XRD_{clean_slug}",
+            labplot_df=labplot_df,
+            summary_data=quant_df,
+            title=plot_cfg["title"] or f"XRD Profile Deconvolution: {fc['sample_name']}",
+            units={"TwoTheta_deg": "deg", "Observed_Intensity": "Counts"},
+        )
+        st.download_button(
+            "📦 Download Complete XRD Publication Package (.ZIP: OriginLab, LabPlot, PNG, SVG, PDF)",
+            data=zip_bytes,
+            file_name=f"XRD_{clean_slug}_Publication_Bundle.zip",
+            mime="application/zip",
+            type="primary",
+            use_container_width=True,
+            key="dl_xrd_zip",
+        )
+
+        c_left, c_right = st.columns(2)
+        with c_left:
+            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
             st.download_button(
-                "⬇️ Download Complete XRD Publication Package (.ZIP)",
-                data=ec["zip"],
-                file_name=f"XRD_{fc['sample_name'].replace(' ', '_')}_Publication_Bundle.zip",
-                mime="application/zip",
-                type="primary",
-                key="dl_xrd_zip",
+                "📊 Export OriginLab Matrix (.dat)",
+                data=get_originlab_ascii_bytes(labplot_df, title="XRD Studio Profile Matrix", units={"TwoTheta_deg": "deg", "Observed_Intensity": "Counts"}),
+                file_name=f"XRD_{clean_slug}_OriginLab.dat",
+                mime="text/plain",
+                use_container_width=True,
+                key="xrd_origin_dat",
+                help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
             )
-            e1, e2, e3, e4 = st.columns(4)
-            with e1:
-                st.download_button("600 DPI PNG", data=ec["png"], file_name="XRD_600DPI.png", mime="image/png", key="xrd_png")
-            with e2:
-                st.download_button("Vector SVG", data=ec["svg"], file_name="XRD.svg", mime="image/svg+xml", key="xrd_svg")
-            with e3:
-                st.download_button("Vector PDF", data=ec["pdf"], file_name="XRD.pdf", mime="application/pdf", key="xrd_pdf")
-            with e4:
-                st.download_button("LabPlot .DAT", data=ec["dat"], file_name="XRD_LabPlot.dat", mime="text/plain", key="xrd_dat")
+            st.download_button(
+                "📗 Export OriginLab Workbook (.xlsx)",
+                data=get_originlab_excel_bytes(labplot_df, title="XRD Studio Profile Matrix", units={"TwoTheta_deg": "deg", "Observed_Intensity": "Counts"}),
+                file_name=f"XRD_{clean_slug}_OriginLab.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key="xrd_origin_xlsx",
+                help="OriginLab-ready Excel workbook with 4-tier metadata header."
+            )
+            st.download_button(
+                "📈 Export LabPlot Matrix (.dat)",
+                data=get_labplot_ascii_bytes(labplot_df, title="XRD Studio Profile Matrix"),
+                file_name=f"XRD_{clean_slug}_LabPlot.dat",
+                mime="text/plain",
+                use_container_width=True,
+                key="xrd_labplot_dat",
+                help="LabPlot ASCII data table with metadata header."
+            )
+        with c_right:
+            st.markdown("**🖼️ Publication Graphics:**")
+            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_xrd, "png", dpi=600), file_name=f"XRD_{clean_slug}_600DPI.png", mime="image/png", use_container_width=True, key="xrd_png")
+            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_xrd, "svg"), file_name=f"XRD_{clean_slug}.svg", mime="image/svg+xml", use_container_width=True, key="xrd_svg")
+            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_xrd, "pdf"), file_name=f"XRD_{clean_slug}.pdf", mime="application/pdf", use_container_width=True, key="xrd_pdf")
 
         plt.close(fig_xrd)
 
@@ -932,21 +952,38 @@ with tab_stacked:
         )
         st.pyplot(fig_stack)
 
-        if st.button("📦 Prepare Stacked Waterfall Exports (.ZIP & 600 DPI)", key="prep_stack_exp"):
-            st.session_state["xrd_stack_export"] = {
-                "png": get_figure_bytes(fig_stack, "png", dpi=600),
-                "svg": get_figure_bytes(fig_stack, "svg"),
-                "dat": get_labplot_ascii_bytes(stack_lab_df, title="XRD Stacked Waterfall Matrix"),
-            }
-        if "xrd_stack_export" in st.session_state:
-            se = st.session_state["xrd_stack_export"]
-            d1, d2, d3 = st.columns(3)
-            with d1:
-                st.download_button("600 DPI PNG (Stacked)", data=se["png"], file_name="XRD_Stacked_600DPI.png", mime="image/png")
-            with d2:
-                st.download_button("Vector SVG (Stacked)", data=se["svg"], file_name="XRD_Stacked.svg", mime="image/svg+xml")
-            with d3:
-                st.download_button("LabPlot .DAT (Stacked)", data=se["dat"], file_name="XRD_Stacked_LabPlot.dat", mime="text/plain")
+        st.markdown("#### 📥 Stacked Waterfall Export Center")
+        d_left, d_right = st.columns(2)
+        with d_left:
+            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
+            st.download_button(
+                "📊 Export OriginLab .DAT (Stacked)",
+                data=get_originlab_ascii_bytes(stack_lab_df, title="XRD Stacked Waterfall Matrix", units={"TwoTheta_deg": "deg"}),
+                file_name="XRD_Stacked_OriginLab.dat",
+                mime="text/plain",
+                use_container_width=True,
+                key="xrd_stack_origin_dat"
+            )
+            st.download_button(
+                "📗 Export OriginLab .XLSX (Stacked)",
+                data=get_originlab_excel_bytes(stack_lab_df, title="XRD Stacked Waterfall Matrix", units={"TwoTheta_deg": "deg"}),
+                file_name="XRD_Stacked_OriginLab.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key="xrd_stack_origin_xlsx"
+            )
+            st.download_button(
+                "📈 Export LabPlot .DAT (Stacked)",
+                data=get_labplot_ascii_bytes(stack_lab_df, title="XRD Stacked Waterfall Matrix"),
+                file_name="XRD_Stacked_LabPlot.dat",
+                mime="text/plain",
+                use_container_width=True,
+                key="xrd_stack_labplot_dat"
+            )
+        with d_right:
+            st.markdown("**🖼️ Publication Graphics:**")
+            st.download_button("🖼️ Export 600 DPI PNG (Stacked)", data=get_figure_bytes(fig_stack, "png", dpi=600), file_name="XRD_Stacked_600DPI.png", mime="image/png", use_container_width=True, key="xrd_stack_png")
+            st.download_button("📐 Export Vector SVG (Stacked)", data=get_figure_bytes(fig_stack, "svg"), file_name="XRD_Stacked.svg", mime="image/svg+xml", use_container_width=True, key="xrd_stack_svg")
         plt.close(fig_stack)
     else:
         st.warning("Select at least one pattern column above to display the stacked waterfall plot.")

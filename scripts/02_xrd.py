@@ -14,7 +14,7 @@ if str(BASE_DIR) not in sys.path:
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from modules.export_utils import save_publication_figure, export_labplot_ascii
+from modules.export_utils import save_publication_figure, export_labplot_ascii, export_originlab_ascii
 from modules.file_parser import load_smart_file
 from modules.xrd_module import process_and_plot_xrd, generate_benchmark_xrd_data
 DEFAULT_DATA_FILE = BASE_DIR / "data" / "xrd" / "xrd_data.csv"
@@ -76,6 +76,16 @@ def main():
     export_labplot_ascii(
         labplot_df,
         filepath=ascii_out,
+        title="XRD Diffraction Stacked Patterns with Scherrer Analysis",
+        units=units,
+        comments=["Cu K-alpha radiation (lambda = 0.15406 nm)", "K = 0.9 shape factor"]
+    )
+
+    # Export formatted ASCII matrix for OriginLab
+    origin_out = OUTPUT_DIR / "XRD_Stacked_OriginLab.dat"
+    export_originlab_ascii(
+        labplot_df,
+        filepath=origin_out,
         title="XRD Diffraction Stacked Patterns with Scherrer Analysis",
         units=units,
         comments=["Cu K-alpha radiation (lambda = 0.15406 nm)", "K = 0.9 shape factor"]

@@ -1,6 +1,6 @@
 """
-export_utils.py - Universal publication export, color themes, and LabPlot ASCII matrix formatter.
-Includes 600 DPI raster, vector SVG/PDF, LabPlot .dat matrix, and ZIP archive bundling.
+export_utils.py - Universal publication export, color themes, OriginLab, and LabPlot ASCII matrix formatter.
+Includes 600 DPI raster, vector SVG/PDF, OriginLab (.dat & .xlsx), LabPlot (.dat) matrix, and ZIP archive bundling.
 """
 
 import io
@@ -159,6 +159,159 @@ def get_labplot_ascii_bytes(
     return (header_block + csv_str).encode('utf-8')
 
 
+def _get_origin_col_letter(idx: int) -> str:
+    """Converts 0-based column index to Excel/Origin column notation (0 -> 'A', 25 -> 'Z', 26 -> 'AA')."""
+    res = ""
+    idx += 1
+    while idx > 0:
+        idx, remainder = divmod(idx - 1, 26)
+        res = chr(65 + remainder) + res
+    return res
+
+
+def get_originlab_ascii_bytes(
+    df: pd.DataFrame,
+    title: str = "Materials Characterization Matrix",
+    units: Optional[Dict[str, str]] = None,
+    comments: Optional[Union[List[str], Dict[str, str]]] = None,
+    designations: Optional[List[str]] = None,
+    delimiter: str = "\t"
+) -> bytes:
+    """
+    Returns in-memory UTF-8 bytes for an OriginLab-compatible ASCII matrix (.dat / .csv).
+
+    Equipped with OriginLab's standard 4-tier column metadata structure:
+      - Line 1: Short Names with Origin Column Designations (e.g. A(X), B(Y), C(Y)...)
+      - Line 2: Long Names (descriptive column names)
+      - Line 3: Units (physical dimensions)
+      - Line 4: Comments (spectral/sample provenance)
+      - Lines 5+: High-precision numerical data table
+
+    Fully compatible with OriginLab 2018-2026+ drag-and-drop ingestion, File -> Import -> Single ASCII (impASC),
+    and OriginLab Data Connectors without requiring manual column type mapping.
+    """
+    units = units or {}
+    num_cols = len(df.columns)
+
+    # 1. Establish Origin column designations: (X) for col 0, (Y) for cols 1..N-1 by default
+    if designations and len(designations) == num_cols:
+        col_desigs = [d if d.startswith('(') else f"({d})" for d in designations]
+    else:
+        col_desigs = ['(X)'] + ['(Y)'] * max(0, num_cols - 1)
+
+    short_names = [f"{_get_origin_col_letter(i)}{col_desigs[i]}" for i in range(num_cols)]
+    long_names = [str(col) for col in df.columns]
+    unit_row = [str(units.get(col, "")) for col in df.columns]
+
+    # Comments row
+    if isinstance(comments, dict):
+        comment_row = [str(comments.get(col, title)) for col in df.columns]
+    elif isinstance(comments, list) and len(comments) == num_cols:
+        comment_row = [str(c) for c in comments]
+    elif isinstance(comments, list) and len(comments) > 0:
+        comment_row = [str(comments[0])] + [str(comments[min(i, len(comments)-1)]) for i in range(1, num_cols)]
+    else:
+        comment_row = [title] * num_cols
+
+    lines = [
+        "# ==============================================================================",
+        "# OriginLab Worksheet Data Matrix (.DAT)",
+        "# Hub: Automated Materials Characterization & Spectroscopic Analysis Hub",
+        f"# Title: {title}",
+        f"# Export Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        f"# Total Rows: {len(df)} | Total Columns: {num_cols}",
+        "# OriginLab Drag & Drop Instructions:",
+        "#   - Drag and drop this file directly into an empty OriginLab worksheet window.",
+        "#   - Or use: File -> Import -> Single ASCII (impASC).",
+        "#   - Column mapping: (X) = Independent Axis, (Y) = Dependent Profiles.",
+        "# ==============================================================================",
+    ]
+    header_block = "\n".join(lines) + "\n"
+
+    # OriginLab 4 metadata rows
+    subheaders = [
+        delimiter.join(short_names),
+        delimiter.join(long_names),
+        delimiter.join(unit_row),
+        delimiter.join(comment_row),
+    ]
+    subheader_block = "\n".join(subheaders) + "\n"
+
+    # Format data rows without pandas header
+    data_str = df.to_csv(sep=delimiter, index=False, header=False)
+    return (header_block + subheader_block + data_str).encode('utf-8')
+
+
+def export_originlab_ascii(
+    df: pd.DataFrame,
+    filepath: Union[str, Path],
+    title: str = "Materials Characterization Matrix",
+    units: Optional[Dict[str, str]] = None,
+    comments: Optional[Union[List[str], Dict[str, str]]] = None,
+    designations: Optional[List[str]] = None,
+    delimiter: str = "\t"
+) -> Path:
+    """Exports a pandas DataFrame into a formatted OriginLab-compatible ASCII matrix (.dat)."""
+    path = Path(filepath)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content_bytes = get_originlab_ascii_bytes(
+        df=df,
+        title=title,
+        units=units,
+        comments=comments,
+        designations=designations,
+        delimiter=delimiter
+    )
+    with open(path, "wb") as f:
+        f.write(content_bytes)
+    print(f"[EXPORT] Saved OriginLab ASCII Matrix: {path}")
+    return path
+
+
+def get_originlab_excel_bytes(
+    df: pd.DataFrame,
+    title: str = "Materials Characterization Matrix",
+    units: Optional[Dict[str, str]] = None,
+    comments: Optional[Union[List[str], Dict[str, str]]] = None,
+) -> bytes:
+    """
+    Exports a pandas DataFrame into an OriginLab-ready Excel (.xlsx) workbook.
+    Configured with standard OriginLab 4-row header (Short Name, Long Name, Units, Comments)
+    for seamless 1-click import into OriginLab worksheets.
+    """
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "OriginLab_Data"
+
+    num_cols = len(df.columns)
+    units = units or {}
+    short_names = [_get_origin_col_letter(i) for i in range(num_cols)]
+    long_names = [str(col) for col in df.columns]
+    unit_row = [str(units.get(col, "")) for col in df.columns]
+    if isinstance(comments, dict):
+        comment_row = [str(comments.get(col, title)) for col in df.columns]
+    elif isinstance(comments, list) and len(comments) == num_cols:
+        comment_row = [str(c) for c in comments]
+    elif isinstance(comments, list) and len(comments) > 0:
+        comment_row = [str(comments[0])] + [str(comments[min(i, len(comments) - 1)]) for i in range(1, num_cols)]
+    else:
+        comment_row = [title] * num_cols
+
+    ws.append(short_names)
+    ws.append(long_names)
+    ws.append(unit_row)
+    ws.append(comment_row)
+
+    for row in df.itertuples(index=False, name=None):
+        ws.append(list(row))
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
 def build_analysis_bundle_zip(
     fig: plt.Figure,
     base_name: str,
@@ -173,6 +326,8 @@ def build_analysis_bundle_zip(
     - 600 DPI publication PNG
     - Vector SVG (editable in Inkscape/Illustrator)
     - Vector PDF (ready for LaTeX publication)
+    - OriginLab-compatible ASCII Matrix (.dat)
+    - OriginLab-ready Excel Workbook (.xlsx)
     - LabPlot-compatible ASCII Matrix (.dat)
     - Summary Report (.csv or .txt)
     """
@@ -184,10 +339,19 @@ def build_analysis_bundle_zip(
         zf.writestr(f"{base_name}.svg", get_figure_bytes(fig, 'svg'))
         # 3. Vector PDF
         zf.writestr(f"{base_name}.pdf", get_figure_bytes(fig, 'pdf'))
-        # 4. LabPlot ASCII Matrix
+        # 4. OriginLab ASCII Matrix (.dat)
+        origin_bytes = get_originlab_ascii_bytes(labplot_df, title=title, units=units, comments=comments)
+        zf.writestr(f"{base_name}_OriginLab_Matrix.dat", origin_bytes)
+        # 5. OriginLab Excel Workbook (.xlsx)
+        try:
+            origin_xlsx = get_originlab_excel_bytes(labplot_df, title=title, units=units, comments=comments)
+            zf.writestr(f"{base_name}_OriginLab.xlsx", origin_xlsx)
+        except Exception as e:
+            print(f"[WARN] Failed to write OriginLab Excel: {e}")
+        # 6. LabPlot ASCII Matrix (.dat)
         dat_bytes = get_labplot_ascii_bytes(labplot_df, title=title, units=units, comments=comments)
         zf.writestr(f"{base_name}_LabPlot_Matrix.dat", dat_bytes)
-        # 5. Summary Diagnostics
+        # 7. Summary Diagnostics
         if summary_data is not None:
             if isinstance(summary_data, pd.DataFrame):
                 zf.writestr(f"{base_name}_Summary.csv", summary_data.to_csv(index=False))

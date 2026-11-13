@@ -14,7 +14,7 @@ if str(BASE_DIR) not in sys.path:
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from modules.export_utils import save_publication_figure, export_labplot_ascii
+from modules.export_utils import save_publication_figure, export_labplot_ascii, export_originlab_ascii
 from modules.file_parser import load_smart_file
 from modules.ftir_module import process_and_plot_ftir, generate_benchmark_ftir_data
 DEFAULT_DATA_FILE = BASE_DIR / "data" / "ftir" / "ftir_data.csv"
@@ -73,6 +73,16 @@ def main():
     export_labplot_ascii(
         labplot_df,
         filepath=ascii_out,
+        title="FTIR Stacked Spectra with Savitzky-Golay Filtering",
+        units=units,
+        comments=["Savitzky-Golay Window=11, Polyorder=2", "Stacked with discrete 35% offsets"]
+    )
+
+    # Export formatted ASCII matrix for OriginLab
+    origin_out = OUTPUT_DIR / "FTIR_Stacked_OriginLab.dat"
+    export_originlab_ascii(
+        labplot_df,
+        filepath=origin_out,
         title="FTIR Stacked Spectra with Savitzky-Golay Filtering",
         units=units,
         comments=["Savitzky-Golay Window=11, Polyorder=2", "Stacked with discrete 35% offsets"]

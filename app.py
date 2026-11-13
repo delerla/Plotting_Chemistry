@@ -25,7 +25,9 @@ from modules.export_utils import (
     PUBLICATION_PALETTES,
     build_analysis_bundle_zip,
     get_figure_bytes,
-    get_labplot_ascii_bytes
+    get_labplot_ascii_bytes,
+    get_originlab_ascii_bytes,
+    get_originlab_excel_bytes
 )
 from modules.file_parser import load_smart_file
 from modules.ftir_module import process_and_plot_ftir, generate_benchmark_ftir_data
@@ -213,6 +215,12 @@ with st.sidebar:
     st.session_state.current_technique = selected_tech
 
     st.markdown("---")
+    with st.expander("🧭 Dedicated Intelligence Studios", expanded=True):
+        st.markdown("*1-Click stream links to domain-specific platforms:*")
+        st.page_link("pages/1_⚡_XPS_Studio.py", label="XPS Intelligence Studio", icon="⚡")
+        st.page_link("pages/2_💎_XRD_Studio.py", label="XRD Crystallography Studio", icon="💎")
+        st.page_link("pages/3_🧪_FTIR_Studio.py", label="FTIR Spectroscopy Studio", icon="🧪")
+
     with st.expander("🇸🇦 Saudi Research Alliance (KAUST · KFUPM · KACST · IAU)", expanded=False):
         st.markdown("""
         **Cross-Institutional Reference Databank**
@@ -243,7 +251,7 @@ with st.sidebar:
         **Contact:** [delerla@yahoo.de](mailto:delerla@yahoo.de)  
         **License:** MIT Open-Source
         """)
-    st.caption("LabPlot ASCII (.dat), 600 DPI PNG, Vector SVG & PDF exports enabled.")
+    st.caption("OriginLab (.dat), LabPlot ASCII (.dat), 600 DPI PNG, Vector SVG & PDF exports enabled.")
 
 # ==============================================================================
 # GLOBAL BRANDING & HEADER BANNER
@@ -293,6 +301,14 @@ technique = st.session_state.current_technique
 if technique.startswith("1"):
     st.markdown('<div class="main-header">Fourier-Transform Infrared (FTIR) Spectroscopy</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Multi-sample spectral stacking, Savitzky-Golay filtering, normalization, and vibrational band deconvolution.</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 0.8rem;">
+        <strong>🧪 Dedicated FTIR Platform Available:</strong> 
+        Need ATR crystal correction, AsLS/Rubberband baseline subtraction, 2nd-derivative shoulder resolution, or PAN/MOF deconvolution?
+    </div>
+    """, unsafe_allow_html=True)
+    st.page_link("pages/3_🧪_FTIR_Studio.py", label="🚀 Launch Dedicated FTIR Spectroscopy Studio (1-Click Stream Page)", icon="🧪")
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
@@ -374,26 +390,46 @@ if technique.startswith("1"):
             units={'Wavenumber_cm-1': 'cm^-1'}
         )
         st.download_button(
-            "📦 Download Complete Publication Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Report)",
+            "📦 Download Complete Publication Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF, Report)",
             data=zip_bytes,
             file_name="FTIR_Publication_Package.zip",
-            mime="application/zip"
+            mime="application/zip",
+            type="primary",
+            use_container_width=True
         )
         
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_ftir, 'png', dpi=600), file_name="FTIR_600DPI.png", mime="image/png")
-        with c2:
-            st.download_button("Export Vector SVG", data=get_figure_bytes(fig_ftir, 'svg'), file_name="FTIR.svg", mime="image/svg+xml")
-        with c3:
-            st.download_button("Export Vector PDF", data=get_figure_bytes(fig_ftir, 'pdf'), file_name="FTIR.pdf", mime="application/pdf")
-        with c4:
+        c_left, c_right = st.columns(2)
+        with c_left:
+            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
             st.download_button(
-                "LabPlot ASCII Matrix (.dat)",
+                "📊 Export OriginLab Matrix (.dat)",
+                data=get_originlab_ascii_bytes(labplot_ftir_df, title="FTIR Matrix", units={'Wavenumber_cm-1': 'cm^-1'}),
+                file_name="FTIR_OriginLab.dat",
+                mime="text/plain",
+                use_container_width=True,
+                help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
+            )
+            st.download_button(
+                "📗 Export OriginLab Workbook (.xlsx)",
+                data=get_originlab_excel_bytes(labplot_ftir_df, title="FTIR Matrix", units={'Wavenumber_cm-1': 'cm^-1'}),
+                file_name="FTIR_OriginLab.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                help="OriginLab-ready Excel workbook with 4-tier metadata header."
+            )
+            st.download_button(
+                "📈 Export LabPlot Matrix (.dat)",
                 data=get_labplot_ascii_bytes(labplot_ftir_df, title="FTIR Matrix", units={'Wavenumber_cm-1': 'cm^-1'}),
                 file_name="FTIR_LabPlot.dat",
-                mime="text/plain"
+                mime="text/plain",
+                use_container_width=True,
+                help="LabPlot ASCII data table with metadata header."
             )
+        with c_right:
+            st.markdown("**🖼️ Publication Graphics:**")
+            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_ftir, 'png', dpi=600), file_name="FTIR_600DPI.png", mime="image/png", use_container_width=True)
+            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_ftir, 'svg'), file_name="FTIR.svg", mime="image/svg+xml", use_container_width=True)
+            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_ftir, 'pdf'), file_name="FTIR.pdf", mime="application/pdf", use_container_width=True)
         plt.close(fig_ftir)
 
 # ==============================================================================
@@ -402,6 +438,14 @@ if technique.startswith("1"):
 elif technique.startswith("2"):
     st.markdown('<div class="main-header">X-Ray Diffraction (XRD) & Scherrer Analysis</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Cu Kα (λ = 1.5406 Å) diffraction stacking, Lorentzian deconvolution, and crystallite size determination.</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 0.8rem;">
+        <strong>💎 Dedicated XRD Platform Available:</strong> 
+        Need Rietveld/profile deconvolution, Williamson–Hall microstrain separation, Cu Kα2 stripping, or Spurr–Myers phase quantification?
+    </div>
+    """, unsafe_allow_html=True)
+    st.page_link("pages/2_💎_XRD_Studio.py", label="🚀 Launch Dedicated XRD Crystallography Studio (1-Click Stream Page)", icon="💎")
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
@@ -489,26 +533,46 @@ elif technique.startswith("2"):
             units={'TwoTheta_deg': 'degrees'}
         )
         st.download_button(
-            "📦 Download Complete Publication Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Report)",
+            "📦 Download Complete Publication Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF, Report)",
             data=zip_bytes_xrd,
             file_name="XRD_Publication_Package.zip",
-            mime="application/zip"
+            mime="application/zip",
+            type="primary",
+            use_container_width=True
         )
 
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_xrd, 'png', dpi=600), file_name="XRD_600DPI.png", mime="image/png")
-        with c2:
-            st.download_button("Export Vector SVG", data=get_figure_bytes(fig_xrd, 'svg'), file_name="XRD.svg", mime="image/svg+xml")
-        with c3:
-            st.download_button("Export Vector PDF", data=get_figure_bytes(fig_xrd, 'pdf'), file_name="XRD.pdf", mime="application/pdf")
-        with c4:
+        c_left, c_right = st.columns(2)
+        with c_left:
+            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
             st.download_button(
-                "LabPlot ASCII Matrix (.dat)",
+                "📊 Export OriginLab Matrix (.dat)",
+                data=get_originlab_ascii_bytes(labplot_xrd_df, title="XRD Matrix", units={'TwoTheta_deg': 'degrees'}),
+                file_name="XRD_OriginLab.dat",
+                mime="text/plain",
+                use_container_width=True,
+                help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
+            )
+            st.download_button(
+                "📗 Export OriginLab Workbook (.xlsx)",
+                data=get_originlab_excel_bytes(labplot_xrd_df, title="XRD Matrix", units={'TwoTheta_deg': 'degrees'}),
+                file_name="XRD_OriginLab.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                help="OriginLab-ready Excel workbook with 4-tier metadata header."
+            )
+            st.download_button(
+                "📈 Export LabPlot Matrix (.dat)",
                 data=get_labplot_ascii_bytes(labplot_xrd_df, title="XRD Matrix", units={'TwoTheta_deg': 'degrees'}),
                 file_name="XRD_LabPlot.dat",
-                mime="text/plain"
+                mime="text/plain",
+                use_container_width=True,
+                help="LabPlot ASCII data table with metadata header."
             )
+        with c_right:
+            st.markdown("**🖼️ Publication Graphics:**")
+            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_xrd, 'png', dpi=600), file_name="XRD_600DPI.png", mime="image/png", use_container_width=True)
+            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_xrd, 'svg'), file_name="XRD.svg", mime="image/svg+xml", use_container_width=True)
+            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_xrd, 'pdf'), file_name="XRD.pdf", mime="application/pdf", use_container_width=True)
         plt.close(fig_xrd)
 
 # ==============================================================================
@@ -577,26 +641,46 @@ elif technique.startswith("3"):
             title="Photodegradation Kinetics Data and Fits"
         )
         st.download_button(
-            "📦 Download Complete Publication Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Report)",
+            "📦 Download Complete Publication Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF, Report)",
             data=zip_bytes_uv,
             file_name="UV_Vis_Kinetics_Package.zip",
-            mime="application/zip"
+            mime="application/zip",
+            type="primary",
+            use_container_width=True
         )
 
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_uv, 'png', dpi=600), file_name="UV_Vis_600DPI.png", mime="image/png")
-        with c2:
-            st.download_button("Export Vector SVG", data=get_figure_bytes(fig_uv, 'svg'), file_name="UV_Vis.svg", mime="image/svg+xml")
-        with c3:
-            st.download_button("Export Vector PDF", data=get_figure_bytes(fig_uv, 'pdf'), file_name="UV_Vis.pdf", mime="application/pdf")
-        with c4:
+        c_left, c_right = st.columns(2)
+        with c_left:
+            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
             st.download_button(
-                "LabPlot ASCII Matrix (.dat)",
+                "📊 Export OriginLab Matrix (.dat)",
+                data=get_originlab_ascii_bytes(labplot_kinetics, title="Kinetics Matrix"),
+                file_name="Kinetics_OriginLab.dat",
+                mime="text/plain",
+                use_container_width=True,
+                help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
+            )
+            st.download_button(
+                "📗 Export OriginLab Workbook (.xlsx)",
+                data=get_originlab_excel_bytes(labplot_kinetics, title="Kinetics Matrix"),
+                file_name="Kinetics_OriginLab.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                help="OriginLab-ready Excel workbook with 4-tier metadata header."
+            )
+            st.download_button(
+                "📈 Export LabPlot Matrix (.dat)",
                 data=get_labplot_ascii_bytes(labplot_kinetics, title="Kinetics Matrix"),
                 file_name="Kinetics_LabPlot.dat",
-                mime="text/plain"
+                mime="text/plain",
+                use_container_width=True,
+                help="LabPlot ASCII data table with metadata header."
             )
+        with c_right:
+            st.markdown("**🖼️ Publication Graphics:**")
+            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_uv, 'png', dpi=600), file_name="UV_Vis_600DPI.png", mime="image/png", use_container_width=True)
+            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_uv, 'svg'), file_name="UV_Vis.svg", mime="image/svg+xml", use_container_width=True)
+            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_uv, 'pdf'), file_name="UV_Vis.pdf", mime="application/pdf", use_container_width=True)
         plt.close(fig_uv)
 
 # ==============================================================================
@@ -607,12 +691,12 @@ elif technique.startswith("4"):
     st.markdown('<div class="sub-header">Iterative Shirley baseline subtraction, C 1s charge referencing (284.8 eV), and non-linear multi-peak Voigt profile fitting via lmfit.</div>', unsafe_allow_html=True)
 
     st.markdown("""
-    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 1.2rem;">
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 0.8rem;">
         <strong>⚡ Dedicated Deep-Intelligence Platform Available:</strong> 
-        Need domain-specific deconvolution for <b>MOFs</b> (UiO-66, ZIF-8, HKUST-1 defect analysis), <b>Solar Perovskites</b> (Pb⁰ photolysis defect detection, I/Pb ratios), or <b>PAN Nanofibers</b> (Cyclization Index)?<br>
-        <small style="color: #15803d;">Launch the dedicated <b>XPS Studio</b> locally via <code>run_xps_studio.bat</code> or run <code>streamlit run xps_studio/app_xps.py</code>.</small>
+        Need domain-specific deconvolution for <b>MOFs</b> (UiO-66, ZIF-8, HKUST-1 defect analysis), <b>Solar Perovskites</b> (Pb⁰ photolysis defect detection, I/Pb ratios), or <b>PAN Nanofibers</b> (Cyclization Index)?
     </div>
     """, unsafe_allow_html=True)
+    st.page_link("pages/1_⚡_XPS_Studio.py", label="🚀 Launch Dedicated XPS Intelligence Studio (1-Click Stream Page)", icon="⚡")
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
@@ -674,26 +758,46 @@ elif technique.startswith("4"):
             units={'Binding_Energy_eV': 'eV'}
         )
         st.download_button(
-            "📦 Download Complete Publication Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Report)",
+            "📦 Download Complete Publication Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF, Report)",
             data=zip_bytes_xps,
             file_name="XPS_Publication_Package.zip",
-            mime="application/zip"
+            mime="application/zip",
+            type="primary",
+            use_container_width=True
         )
 
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_xps, 'png', dpi=600), file_name="XPS_600DPI.png", mime="image/png")
-        with c2:
-            st.download_button("Export Vector SVG", data=get_figure_bytes(fig_xps, 'svg'), file_name="XPS.svg", mime="image/svg+xml")
-        with c3:
-            st.download_button("Export Vector PDF", data=get_figure_bytes(fig_xps, 'pdf'), file_name="XPS.pdf", mime="application/pdf")
-        with c4:
+        c_left, c_right = st.columns(2)
+        with c_left:
+            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
             st.download_button(
-                "LabPlot ASCII Matrix (.dat)",
+                "📊 Export OriginLab Matrix (.dat)",
+                data=get_originlab_ascii_bytes(labplot_xps_df, title="XPS Matrix", units={'Binding_Energy_eV': 'eV'}),
+                file_name="XPS_OriginLab.dat",
+                mime="text/plain",
+                use_container_width=True,
+                help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
+            )
+            st.download_button(
+                "📗 Export OriginLab Workbook (.xlsx)",
+                data=get_originlab_excel_bytes(labplot_xps_df, title="XPS Matrix", units={'Binding_Energy_eV': 'eV'}),
+                file_name="XPS_OriginLab.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                help="OriginLab-ready Excel workbook with 4-tier metadata header."
+            )
+            st.download_button(
+                "📈 Export LabPlot Matrix (.dat)",
                 data=get_labplot_ascii_bytes(labplot_xps_df, title="XPS Matrix", units={'Binding_Energy_eV': 'eV'}),
                 file_name="XPS_LabPlot.dat",
-                mime="text/plain"
+                mime="text/plain",
+                use_container_width=True,
+                help="LabPlot ASCII data table with metadata header."
             )
+        with c_right:
+            st.markdown("**🖼️ Publication Graphics:**")
+            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_xps, 'png', dpi=600), file_name="XPS_600DPI.png", mime="image/png", use_container_width=True)
+            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_xps, 'svg'), file_name="XPS.svg", mime="image/svg+xml", use_container_width=True)
+            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_xps, 'pdf'), file_name="XPS.pdf", mime="application/pdf", use_container_width=True)
         plt.close(fig_xps)
 
 # ==============================================================================
@@ -757,26 +861,46 @@ elif technique.startswith("5"):
                 title="SEM Particle Morphological Sizing and Area Distribution"
             )
             st.download_button(
-                "📦 Download Complete SEM Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Particle Data)",
+                "📦 Download Complete SEM Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF)",
                 data=zip_bytes_sem,
                 file_name="SEM_Publication_Package.zip",
-                mime="application/zip"
+                mime="application/zip",
+                type="primary",
+                use_container_width=True
             )
 
-            c1, c2, c3, c4 = st.columns(4)
-            with c1:
-                st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_sem, 'png', dpi=600), file_name="SEM_600DPI.png", mime="image/png")
-            with c2:
-                st.download_button("Export Vector SVG", data=get_figure_bytes(fig_sem, 'svg'), file_name="SEM.svg", mime="image/svg+xml")
-            with c3:
-                st.download_button("Export Vector PDF", data=get_figure_bytes(fig_sem, 'pdf'), file_name="SEM.pdf", mime="application/pdf")
-            with c4:
+            c_left, c_right = st.columns(2)
+            with c_left:
+                st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
                 st.download_button(
-                    "LabPlot ASCII Matrix (.dat)",
+                    "📊 Export OriginLab Matrix (.dat)",
+                    data=get_originlab_ascii_bytes(df_particles, title="SEM Matrix"),
+                    file_name="SEM_OriginLab.dat",
+                    mime="text/plain",
+                    use_container_width=True,
+                    help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
+                )
+                st.download_button(
+                    "📗 Export OriginLab Workbook (.xlsx)",
+                    data=get_originlab_excel_bytes(df_particles, title="SEM Matrix"),
+                    file_name="SEM_OriginLab.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                    help="OriginLab-ready Excel workbook with 4-tier metadata header."
+                )
+                st.download_button(
+                    "📈 Export LabPlot Matrix (.dat)",
                     data=get_labplot_ascii_bytes(df_particles, title="SEM Matrix"),
                     file_name="SEM_LabPlot.dat",
-                    mime="text/plain"
+                    mime="text/plain",
+                    use_container_width=True,
+                    help="LabPlot ASCII data table with metadata header."
                 )
+            with c_right:
+                st.markdown("**🖼️ Publication Graphics:**")
+                st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_sem, 'png', dpi=600), file_name="SEM_600DPI.png", mime="image/png", use_container_width=True)
+                st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_sem, 'svg'), file_name="SEM.svg", mime="image/svg+xml", use_container_width=True)
+                st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_sem, 'pdf'), file_name="SEM.pdf", mime="application/pdf", use_container_width=True)
             plt.close(fig_sem)
 
     with tab_edx:
@@ -832,28 +956,50 @@ elif technique.startswith("5"):
                 title="EDX Spectrum and Composition Table"
             )
             st.download_button(
-                "📦 Download Complete EDX Package (.ZIP: 600 DPI PNG, SVG, PDF, LabPlot .DAT, Report)",
+                "📦 Download Complete EDX Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF, Report)",
                 data=zip_bytes_edx,
                 file_name="EDX_Publication_Package.zip",
                 mime="application/zip",
+                type="primary",
+                use_container_width=True,
                 key="edx_zip"
             )
 
-            c1, c2, c3, c4 = st.columns(4)
-            with c1:
-                st.download_button("Export 600 DPI PNG", data=get_figure_bytes(fig_edx, 'png', dpi=600), file_name="EDX_600DPI.png", mime="image/png", key="edx_png")
-            with c2:
-                st.download_button("Export Vector SVG", data=get_figure_bytes(fig_edx, 'svg'), file_name="EDX.svg", mime="image/svg+xml", key="edx_svg")
-            with c3:
-                st.download_button("Export Vector PDF", data=get_figure_bytes(fig_edx, 'pdf'), file_name="EDX.pdf", mime="application/pdf", key="edx_pdf")
-            with c4:
+            c_left, c_right = st.columns(2)
+            with c_left:
+                st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
                 st.download_button(
-                    "LabPlot ASCII Matrix (.dat)",
+                    "📊 Export OriginLab Matrix (.dat)",
+                    data=get_originlab_ascii_bytes(labplot_edx, title="EDX Matrix", units={'Energy_keV': 'keV', 'Counts': 'Counts'}),
+                    file_name="EDX_OriginLab.dat",
+                    mime="text/plain",
+                    use_container_width=True,
+                    help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop.",
+                    key="edx_origin"
+                )
+                st.download_button(
+                    "📗 Export OriginLab Workbook (.xlsx)",
+                    data=get_originlab_excel_bytes(labplot_edx, title="EDX Matrix", units={'Energy_keV': 'keV', 'Counts': 'Counts'}),
+                    file_name="EDX_OriginLab.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                    help="OriginLab-ready Excel workbook with 4-tier metadata header.",
+                    key="edx_origin_xlsx"
+                )
+                st.download_button(
+                    "📈 Export LabPlot Matrix (.dat)",
                     data=get_labplot_ascii_bytes(labplot_edx, title="EDX Matrix"),
                     file_name="EDX_LabPlot.dat",
                     mime="text/plain",
+                    use_container_width=True,
+                    help="LabPlot ASCII data table with metadata header.",
                     key="edx_dat"
                 )
+            with c_right:
+                st.markdown("**🖼️ Publication Graphics:**")
+                st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_edx, 'png', dpi=600), file_name="EDX_600DPI.png", mime="image/png", use_container_width=True, key="edx_png")
+                st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_edx, 'svg'), file_name="EDX.svg", mime="image/svg+xml", use_container_width=True, key="edx_svg")
+                st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_edx, 'pdf'), file_name="EDX.pdf", mime="application/pdf", use_container_width=True, key="edx_pdf")
             plt.close(fig_edx)
 
 # ==============================================================================
@@ -878,6 +1024,6 @@ st.markdown("""
     <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="color: #0284c7; text-decoration: none; font-weight: 600;">GitHub Repository</a> • 
     <a href="https://github.com/delerla/Plotting_Chemistry/issues" target="_blank" style="color: #0284c7; text-decoration: none; font-weight: 600;">Report Bug / Feature Request</a> • 
     <a href="mailto:delerla@yahoo.de" style="color: #0284c7; text-decoration: none; font-weight: 600;">Contact: delerla@yahoo.de</a><br>
-    <small style="color: #94a3b8;">Publication outputs calibrated to 600 DPI (Nature, Science, ACS, RSC, Monochrome) & LabPlot ASCII interoperability. © 2026 Dr. Deler Langenberg (MIT License).</small>
+    <small style="color: #94a3b8;">Publication outputs calibrated to 600 DPI (Nature, Science, ACS, RSC, Monochrome), OriginLab & LabPlot interoperability. © 2026 Dr. Deler Langenberg (MIT License).</small>
 </div>
 """, unsafe_allow_html=True)

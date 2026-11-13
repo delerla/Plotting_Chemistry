@@ -15,7 +15,7 @@ import cv2
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from modules.export_utils import save_publication_figure, export_labplot_ascii
+from modules.export_utils import save_publication_figure, export_labplot_ascii, export_originlab_ascii
 from modules.file_parser import load_smart_file
 from modules.sem_edx_module import (
     analyze_sem_micrograph,
@@ -89,6 +89,17 @@ def main():
             f"Mean Diameter: {stats_sem['Mean_Diameter_nm']} nm, Std: {stats_sem['Std_Diameter_nm']} nm"
         ]
     )
+    origin_out_sem = OUTPUT_DIR / "SEM_Particle_Sizing_OriginLab.dat"
+    export_originlab_ascii(
+        df_particles,
+        filepath=origin_out_sem,
+        title="SEM Particle Morphological Sizing and Area Distribution",
+        units=units_sem,
+        comments=[
+            f"Total Particles: {stats_sem['Total_Count']}",
+            f"Mean Diameter: {stats_sem['Mean_Diameter_nm']} nm, Std: {stats_sem['Std_Diameter_nm']} nm"
+        ]
+    )
     plt.close(fig_sem)
 
     # ----------------- Part B: EDX Microanalysis -----------------
@@ -124,6 +135,14 @@ def main():
     export_labplot_ascii(
         labplot_edx,
         filepath=ascii_out_edx,
+        title="Energy-Dispersive X-Ray Spectroscopy (EDX) Spectrum",
+        units={'Energy_keV': 'keV', 'Counts': 'Counts'},
+        comments=["Identified elements: " + ", ".join(f"{r['Element']} ({r['Weight_Percent_wt']} wt%)" for r in res_edx['quantification'])]
+    )
+    origin_out_edx = OUTPUT_DIR / "EDX_Spectrum_OriginLab.dat"
+    export_originlab_ascii(
+        labplot_edx,
+        filepath=origin_out_edx,
         title="Energy-Dispersive X-Ray Spectroscopy (EDX) Spectrum",
         units={'Energy_keV': 'keV', 'Counts': 'Counts'},
         comments=["Identified elements: " + ", ".join(f"{r['Element']} ({r['Weight_Percent_wt']} wt%)" for r in res_edx['quantification'])]

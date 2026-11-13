@@ -125,7 +125,8 @@ def test_pan_n1s_cyclization():
 
 
 def test_figure_and_labplot_export():
-    """Tests publication dual-panel figure rendering and LabPlot export table."""
+    """Tests publication dual-panel figure rendering, OriginLab export, and LabPlot export table."""
+    from modules.export_utils import get_originlab_ascii_bytes, get_labplot_ascii_bytes
     df = generate_benchmark_mof_c1s()
     preset = ALL_DOMAINS['MOFs & Coordination Networks']['UiO-66 (Zr-BDC) / C 1s']
     be = df.iloc[:, 0].to_numpy()
@@ -140,6 +141,12 @@ def test_figure_and_labplot_export():
     assert 'Binding_Energy_eV' in labplot_df.columns
     assert 'Residuals' in labplot_df.columns
     assert 'Comp_Aromatic_C-C___C-H' in labplot_df.columns
+
+    # Test OriginLab ASCII export
+    origin_bytes = get_originlab_ascii_bytes(labplot_df, title="XPS C1s OriginLab")
+    assert len(origin_bytes) > 0 and b"A(X)" in origin_bytes and b"B(Y)" in origin_bytes
+    dat_bytes = get_labplot_ascii_bytes(labplot_df, title="XPS C1s LabPlot")
+    assert len(dat_bytes) > 0
 
 
 def test_custom_lineshapes_and_editable_plot():

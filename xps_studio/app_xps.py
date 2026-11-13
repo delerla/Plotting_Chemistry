@@ -23,6 +23,8 @@ from modules.export_utils import (
     build_analysis_bundle_zip,
     get_figure_bytes,
     get_labplot_ascii_bytes,
+    get_originlab_ascii_bytes,
+    get_originlab_excel_bytes,
 )
 from modules.file_parser import sanitize_spectral_dataframe, load_smart_file
 
@@ -229,6 +231,8 @@ with st.sidebar:
 # ==============================================================================
 # MAIN PAGE HEADER
 # ==============================================================================
+st.page_link("app.py", label="← Return to Materials Characterization Multi-Technique Hub", icon="🏠")
+
 st.markdown("""
 <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.65rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
     <div>
@@ -735,47 +739,63 @@ with col_main:
             render_saudi_alliance_explorer(active_technique="XPS")
 
         # ----------------------------------------------------------------------
-        # LAZY PUBLICATION EXPORT CENTER (KEEPS PC FAST DURING INTERACTION!)
+        # PUBLICATION EXPORT CENTER
         # ----------------------------------------------------------------------
         st.markdown("#### 📥 Publication Export Center")
-        if "xps_export_cache" not in st.session_state:
-            if st.button("📦 Prepare Publication Package (600 DPI PNG, Vector SVG, PDF, LabPlot .DAT)", use_container_width=True):
-                with st.spinner("Rendering 600 DPI raster & vector formats..."):
-                    zip_bytes = build_analysis_bundle_zip(
-                        fig_xps,
-                        base_name=f"XPS_{fc['preset_name'].replace(' ', '_').replace('/', '_')}",
-                        labplot_df=labplot_df,
-                        summary_data=quant_df,
-                        title=plot_cfg['title'] or f"XPS Analysis: {fc['preset_name']}",
-                        units={'Binding_Energy_eV': 'eV', 'Experimental_CPS': 'Counts/s'}
-                    )
-                    st.session_state["xps_export_cache"] = {
-                        'zip': zip_bytes,
-                        'png': get_figure_bytes(fig_xps, 'png', dpi=600),
-                        'svg': get_figure_bytes(fig_xps, 'svg'),
-                        'pdf': get_figure_bytes(fig_xps, 'pdf'),
-                        'dat': get_labplot_ascii_bytes(labplot_df, title="XPS LabPlot Matrix")
-                    }
-                    st.rerun()
-        else:
-            ec = st.session_state["xps_export_cache"]
+        clean_slug = fc['preset_name'].replace(' ', '_').replace('/', '_')
+        zip_bytes = build_analysis_bundle_zip(
+            fig_xps,
+            base_name=f"XPS_{clean_slug}",
+            labplot_df=labplot_df,
+            summary_data=quant_df,
+            title=plot_cfg['title'] or f"XPS Analysis: {fc['preset_name']}",
+            units={'Binding_Energy_eV': 'eV', 'Experimental_CPS': 'Counts/s'}
+        )
+        st.download_button(
+            "📦 Download Complete XPS Publication Package (.ZIP: OriginLab, LabPlot, PNG, SVG, PDF)",
+            data=zip_bytes,
+            file_name=f"XPS_{clean_slug}_Package.zip",
+            mime="application/zip",
+            key="dl_xps_zip",
+            type="primary",
+            use_container_width=True
+        )
+
+        c_left, c_right = st.columns(2)
+        with c_left:
+            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
             st.download_button(
-                "⬇️ Download Complete XPS Publication Package (.ZIP: All Files)",
-                data=ec['zip'],
-                file_name=f"XPS_{fc['preset_name'].replace(' ', '_')}_Package.zip",
-                mime="application/zip",
-                key="dl_xps_zip",
-                type="primary"
+                "📊 Export OriginLab Matrix (.dat)",
+                data=get_originlab_ascii_bytes(labplot_df, title="XPS OriginLab Matrix", units={'Binding_Energy_eV': 'eV', 'Experimental_CPS': 'Counts/s'}),
+                file_name=f"XPS_{clean_slug}_OriginLab.dat",
+                mime="text/plain",
+                use_container_width=True,
+                key="xps_origin_dat",
+                help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
             )
-            c1, c2, c3, c4 = st.columns(4)
-            with c1:
-                st.download_button("600 DPI PNG", data=ec['png'], file_name="XPS_600DPI.png", mime="image/png", key="xps_png")
-            with c2:
-                st.download_button("Vector SVG", data=ec['svg'], file_name="XPS.svg", mime="image/svg+xml", key="xps_svg")
-            with c3:
-                st.download_button("Vector PDF", data=ec['pdf'], file_name="XPS.pdf", mime="application/pdf", key="xps_pdf")
-            with c4:
-                st.download_button("LabPlot .DAT", data=ec['dat'], file_name="XPS_LabPlot.dat", mime="text/plain", key="xps_dat")
+            st.download_button(
+                "📗 Export OriginLab Workbook (.xlsx)",
+                data=get_originlab_excel_bytes(labplot_df, title="XPS OriginLab Matrix", units={'Binding_Energy_eV': 'eV', 'Experimental_CPS': 'Counts/s'}),
+                file_name=f"XPS_{clean_slug}_OriginLab.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key="xps_origin_xlsx",
+                help="OriginLab-ready Excel workbook with 4-tier metadata header."
+            )
+            st.download_button(
+                "📈 Export LabPlot Matrix (.dat)",
+                data=get_labplot_ascii_bytes(labplot_df, title="XPS LabPlot Matrix"),
+                file_name=f"XPS_{clean_slug}_LabPlot.dat",
+                mime="text/plain",
+                use_container_width=True,
+                key="xps_labplot_dat",
+                help="LabPlot ASCII data table with metadata header."
+            )
+        with c_right:
+            st.markdown("**🖼️ Publication Graphics:**")
+            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_xps, 'png', dpi=600), file_name=f"XPS_{clean_slug}_600DPI.png", mime="image/png", use_container_width=True, key="xps_png")
+            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_xps, 'svg'), file_name=f"XPS_{clean_slug}.svg", mime="image/svg+xml", use_container_width=True, key="xps_svg")
+            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_xps, 'pdf'), file_name=f"XPS_{clean_slug}.pdf", mime="application/pdf", use_container_width=True, key="xps_pdf")
 
         plt.close(fig_xps)
 

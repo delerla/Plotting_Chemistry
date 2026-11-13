@@ -23,6 +23,8 @@ from modules.export_utils import (
     build_analysis_bundle_zip,
     get_figure_bytes,
     get_labplot_ascii_bytes,
+    get_originlab_ascii_bytes,
+    get_originlab_excel_bytes,
 )
 from modules.file_parser import load_smart_file
 
@@ -403,6 +405,7 @@ with st.sidebar:
 # ==============================================================================
 # MAIN WORKSPACE HEADER
 # ==============================================================================
+st.page_link("app.py", label="← Return to Materials Characterization Multi-Technique Hub", icon="🏠")
 st.markdown('<div class="ftir-header">🧪 FTIR Studio: Vibrational Deconvolution & Chemical Intelligence</div>', unsafe_allow_html=True)
 st.markdown(f"""
 <div style="margin-bottom: 1.0rem;">
@@ -758,47 +761,64 @@ with tab_deconv:
             from modules.saudi_search_ui import render_saudi_alliance_explorer
             render_saudi_alliance_explorer(active_technique="FTIR")
 
-        # Lazy Publication Export Center
+        # ----------------------------------------------------------------------
+        # PUBLICATION EXPORT CENTER
+        # ----------------------------------------------------------------------
         st.markdown("#### 📥 Publication Export Center")
-        if "ftir_export_cache" not in st.session_state:
-            if st.button("📦 Prepare Publication Package (600 DPI PNG, Vector SVG, PDF, LabPlot .DAT)", type="primary", use_container_width=True):
-                with st.spinner("Rendering 600 DPI raster & vector formats..."):
-                    slug = fc["sample_name"].replace(" ", "_").replace("/", "_")
-                    zip_bytes = build_analysis_bundle_zip(
-                        fig_ir,
-                        base_name=f"FTIR_{slug}",
-                        labplot_df=labplot_df,
-                        summary_data=quant_df,
-                        title=plot_cfg["title"] or f"FTIR Deconvolution: {fc['sample_name']}",
-                        units={"Wavenumber_cm-1": "cm-1", "Observed_Absorbance": "a.u."},
-                    )
-                    st.session_state["ftir_export_cache"] = {
-                        "zip": zip_bytes,
-                        "png": get_figure_bytes(fig_ir, "png", dpi=600),
-                        "svg": get_figure_bytes(fig_ir, "svg"),
-                        "pdf": get_figure_bytes(fig_ir, "pdf"),
-                        "dat": get_labplot_ascii_bytes(labplot_df, title="FTIR Studio Matrix"),
-                    }
-                    st.rerun()
-        else:
-            ec = st.session_state["ftir_export_cache"]
+        slug = fc["sample_name"].replace(" ", "_").replace("/", "_")
+        zip_bytes = build_analysis_bundle_zip(
+            fig_ir,
+            base_name=f"FTIR_{slug}",
+            labplot_df=labplot_df,
+            summary_data=quant_df,
+            title=plot_cfg["title"] or f"FTIR Deconvolution: {fc['sample_name']}",
+            units={"Wavenumber_cm-1": "cm-1", "Observed_Absorbance": "a.u."},
+        )
+        st.download_button(
+            "📦 Download Complete FTIR Publication Package (.ZIP: OriginLab, LabPlot, PNG, SVG, PDF)",
+            data=zip_bytes,
+            file_name=f"FTIR_{slug}_Publication_Bundle.zip",
+            mime="application/zip",
+            type="primary",
+            use_container_width=True,
+            key="dl_ftir_zip",
+        )
+
+        c_left, c_right = st.columns(2)
+        with c_left:
+            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
             st.download_button(
-                "⬇️ Download Complete FTIR Publication Package (.ZIP)",
-                data=ec["zip"],
-                file_name=f"FTIR_{fc['sample_name'].replace(' ', '_')}_Publication_Bundle.zip",
-                mime="application/zip",
-                type="primary",
-                key="dl_ftir_zip",
+                "📊 Export OriginLab Matrix (.dat)",
+                data=get_originlab_ascii_bytes(labplot_df, title="FTIR Studio Matrix", units={"Wavenumber_cm-1": "cm-1", "Observed_Absorbance": "a.u."}),
+                file_name=f"FTIR_{slug}_OriginLab.dat",
+                mime="text/plain",
+                use_container_width=True,
+                key="ftir_origin_dat",
+                help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
             )
-            e1, e2, e3, e4 = st.columns(4)
-            with e1:
-                st.download_button("600 DPI PNG", data=ec["png"], file_name="FTIR_600DPI.png", mime="image/png", key="ftir_png")
-            with e2:
-                st.download_button("Vector SVG", data=ec["svg"], file_name="FTIR.svg", mime="image/svg+xml", key="ftir_svg")
-            with e3:
-                st.download_button("Vector PDF", data=ec["pdf"], file_name="FTIR.pdf", mime="application/pdf", key="ftir_pdf")
-            with e4:
-                st.download_button("LabPlot .DAT", data=ec["dat"], file_name="FTIR_LabPlot.dat", mime="text/plain", key="ftir_dat")
+            st.download_button(
+                "📗 Export OriginLab Workbook (.xlsx)",
+                data=get_originlab_excel_bytes(labplot_df, title="FTIR Studio Matrix", units={"Wavenumber_cm-1": "cm-1", "Observed_Absorbance": "a.u."}),
+                file_name=f"FTIR_{slug}_OriginLab.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key="ftir_origin_xlsx",
+                help="OriginLab-ready Excel workbook with 4-tier metadata header."
+            )
+            st.download_button(
+                "📈 Export LabPlot Matrix (.dat)",
+                data=get_labplot_ascii_bytes(labplot_df, title="FTIR Studio Matrix"),
+                file_name=f"FTIR_{slug}_LabPlot.dat",
+                mime="text/plain",
+                use_container_width=True,
+                key="ftir_labplot_dat",
+                help="LabPlot ASCII data table with metadata header."
+            )
+        with c_right:
+            st.markdown("**🖼️ Publication Graphics:**")
+            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_ir, "png", dpi=600), file_name=f"FTIR_{slug}_600DPI.png", mime="image/png", use_container_width=True, key="ftir_png")
+            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_ir, "svg"), file_name=f"FTIR_{slug}.svg", mime="image/svg+xml", use_container_width=True, key="ftir_svg")
+            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_ir, "pdf"), file_name=f"FTIR_{slug}.pdf", mime="application/pdf", use_container_width=True, key="ftir_pdf")
 
         plt.close(fig_ir)
 
@@ -863,21 +883,38 @@ with tab_stacked:
             for s_lbl, wn_list in det_peaks_map.items():
                 st.write(f"**{s_lbl}:** {', '.join(str(int(round(v))) for v in wn_list) or 'None'}")
 
-        if st.button("📦 Prepare Stacked Waterfall Exports (600 DPI & LabPlot .DAT)", key="prep_ftir_stack_exp"):
-            st.session_state["ftir_stack_export"] = {
-                "png": get_figure_bytes(fig_stack, "png", dpi=600),
-                "svg": get_figure_bytes(fig_stack, "svg"),
-                "dat": get_labplot_ascii_bytes(stack_lab_df, title="FTIR Stacked Waterfall Matrix"),
-            }
-        if "ftir_stack_export" in st.session_state:
-            se = st.session_state["ftir_stack_export"]
-            d1, d2, d3 = st.columns(3)
-            with d1:
-                st.download_button("600 DPI PNG (Stacked)", data=se["png"], file_name="FTIR_Stacked_600DPI.png", mime="image/png")
-            with d2:
-                st.download_button("Vector SVG (Stacked)", data=se["svg"], file_name="FTIR_Stacked.svg", mime="image/svg+xml")
-            with d3:
-                st.download_button("LabPlot .DAT (Stacked)", data=se["dat"], file_name="FTIR_Stacked_LabPlot.dat", mime="text/plain")
+        st.markdown("#### 📥 Stacked Waterfall Export Center")
+        d_left, d_right = st.columns(2)
+        with d_left:
+            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
+            st.download_button(
+                "📊 Export OriginLab .DAT (Stacked)",
+                data=get_originlab_ascii_bytes(stack_lab_df, title="FTIR Stacked Waterfall Matrix", units={"Wavenumber_cm-1": "cm-1"}),
+                file_name="FTIR_Stacked_OriginLab.dat",
+                mime="text/plain",
+                use_container_width=True,
+                key="ftir_stack_origin_dat"
+            )
+            st.download_button(
+                "📗 Export OriginLab .XLSX (Stacked)",
+                data=get_originlab_excel_bytes(stack_lab_df, title="FTIR Stacked Waterfall Matrix", units={"Wavenumber_cm-1": "cm-1"}),
+                file_name="FTIR_Stacked_OriginLab.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key="ftir_stack_origin_xlsx"
+            )
+            st.download_button(
+                "📈 Export LabPlot .DAT (Stacked)",
+                data=get_labplot_ascii_bytes(stack_lab_df, title="FTIR Stacked Waterfall Matrix"),
+                file_name="FTIR_Stacked_LabPlot.dat",
+                mime="text/plain",
+                use_container_width=True,
+                key="ftir_stack_labplot_dat"
+            )
+        with d_right:
+            st.markdown("**🖼️ Publication Graphics:**")
+            st.download_button("🖼️ Export 600 DPI PNG (Stacked)", data=get_figure_bytes(fig_stack, "png", dpi=600), file_name="FTIR_Stacked_600DPI.png", mime="image/png", use_container_width=True, key="ftir_stack_png")
+            st.download_button("📐 Export Vector SVG (Stacked)", data=get_figure_bytes(fig_stack, "svg"), file_name="FTIR_Stacked.svg", mime="image/svg+xml", use_container_width=True, key="ftir_stack_svg")
         plt.close(fig_stack)
     else:
         st.warning("Select at least one spectrum column above to render the stacked waterfall.")

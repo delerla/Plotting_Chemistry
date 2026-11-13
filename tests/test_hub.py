@@ -14,7 +14,13 @@ if str(BASE_DIR) not in sys.path:
 import numpy as np
 import pandas as pd
 
-from modules.export_utils import build_analysis_bundle_zip, export_labplot_ascii
+from modules.export_utils import (
+    build_analysis_bundle_zip,
+    export_labplot_ascii,
+    export_originlab_ascii,
+    get_originlab_ascii_bytes,
+    get_originlab_excel_bytes
+)
 from modules.file_parser import load_smart_file
 from modules.ftir_module import generate_benchmark_ftir_data, process_and_plot_ftir
 from modules.xrd_module import generate_benchmark_xrd_data, process_and_plot_xrd, scherrer_size
@@ -114,10 +120,41 @@ def test_sem_edx_microanalysis():
     assert 'Si' in elements or 'Cu' in elements or 'Ni' in elements
 
 
-def test_zip_bundle_export():
-    """Tests generation of complete analysis package ZIP bundle."""
+def test_originlab_and_labplot_export():
+    """Tests generation of OriginLab matrix (.dat & .xlsx), LabPlot matrix, and complete ZIP bundle."""
+    import zipfile
+    import io
+    import tempfile
     df_ftir = generate_benchmark_ftir_data()
     fig, ax, peaks, labplot_df = process_and_plot_ftir(df_ftir)
+
+    # 1. Test OriginLab ASCII bytes and structure
+    units = {'Wavenumber_cm-1': 'cm^-1'}
+    origin_bytes = get_originlab_ascii_bytes(labplot_df, title="FTIR Benchmark Matrix", units=units)
+    assert len(origin_bytes) > 0
+    origin_text = origin_bytes.decode('utf-8')
+    assert "OriginLab Worksheet Data Matrix" in origin_text
+    assert "A(X)" in origin_text
+    assert "B(Y)" in origin_text
+
+    # 2. Test round-trip ingestion of exported OriginLab file via load_smart_file
+    with tempfile.NamedTemporaryFile(suffix='.dat', delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+    try:
+        export_originlab_ascii(labplot_df, tmp_path, title="FTIR Benchmark Matrix", units=units)
+        df_reloaded, _, meta_reloaded = load_smart_file(tmp_path)
+        assert df_reloaded is not None
+        assert len(df_reloaded) == len(labplot_df)
+        assert meta_reloaded['detected_technique'] == '1. FTIR Spectroscopy'
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
+
+    # 3. Test OriginLab Excel workbook generation
+    excel_bytes = get_originlab_excel_bytes(labplot_df, title="FTIR Excel", units=units)
+    assert len(excel_bytes) > 0
+
+    # 4. Test complete publication package ZIP bundle contents
     zip_bytes = build_analysis_bundle_zip(
         fig,
         base_name="Test_FTIR",
@@ -126,6 +163,15 @@ def test_zip_bundle_export():
     )
     assert len(zip_bytes) > 1000
     assert zip_bytes[:2] == b'PK'  # ZIP magic bytes
+
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        namelist = zf.namelist()
+        assert "Test_FTIR_OriginLab_Matrix.dat" in namelist
+        assert "Test_FTIR_OriginLab.xlsx" in namelist
+        assert "Test_FTIR_LabPlot_Matrix.dat" in namelist
+        assert "Test_FTIR_600DPI.png" in namelist
+        assert "Test_FTIR.svg" in namelist
+        assert "Test_FTIR.pdf" in namelist
 
 
 def test_ragged_csv_and_nan_tolerance():
@@ -200,8 +246,8 @@ if __name__ == '__main__':
     print("  [PASS] XPS Shirley Baseline & Voigt Deconvolution")
     test_sem_edx_microanalysis()
     print("  [PASS] SEM Particle Sizing & EDX Microanalysis")
-    test_zip_bundle_export()
-    print("  [PASS] ZIP Package & LabPlot ASCII Matrix Bundling")
+    test_originlab_and_labplot_export()
+    print("  [PASS] ZIP Package, OriginLab Matrix (.dat & .xlsx) & LabPlot ASCII Bundling")
     test_community_feedback_and_reviews()
     print("  [PASS] Community Reviews, Wishes & Search Databank Integration")
     print("\n[ALL 9 TESTS PASSED SUCCESSFULLY!]")

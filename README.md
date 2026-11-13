@@ -3,6 +3,7 @@
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://delerla-plotting-chemistry-app-gu8u0i.streamlit.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-brightgreen.svg)](https://python.org)
+[![OriginLab Compatible](https://img.shields.io/badge/OriginLab-Compatible-005696.svg)](https://www.originlab.com)
 [![LabPlot Compatible](https://img.shields.io/badge/LabPlot-Compatible-orange.svg)](https://labplot.kde.org)
 
 An open-source, local-first scientific analysis and visualization engine designed to replace proprietary suites (e.g., OriginLab) with Python 3.12, SciPy, lmfit, OpenCV, Matplotlib, and Streamlit.
@@ -139,10 +140,35 @@ Plotting_Chemistry/
 
 ---
 
-## 📊 LabPlot Interoperability Standard
+## 📊 OriginLab & LabPlot Interoperability Standards
 
-All scripts and GUI exports produce ASCII data tables (`.dat`) equipped with standardized metadata headers recognized by **LabPlot**, **OriginLab**, and **QtiPlot**:
+All scripts and GUI export centers produce publication data tables equipped with standardized metadata headers recognized natively by **OriginLab (Origin / OriginPro)**, **LabPlot**, and **QtiPlot**:
 
+### 1. OriginLab Data Matrix (`.dat` & `.xlsx`)
+OriginLab matrices feature standardized 4-tier column metadata recognized automatically by Origin's **Import Wizard**, **Single ASCII (`impASC`)**, and **Drag-and-Drop** connector:
+
+```text
+# ==============================================================================
+# OriginLab Worksheet Data Matrix (.DAT)
+# Hub: Automated Materials Characterization & Spectroscopic Analysis Hub
+# Title: <Dataset Title>
+# Export Date: YYYY-MM-DD HH:MM:SS
+# OriginLab Drag & Drop: Drop directly into any empty OriginLab worksheet.
+# ==============================================================================
+A(X)	B(Y)	C(Y)	D(Y)
+<Long_Name_1>	<Long_Name_2>	<Long_Name_3>	<Long_Name_4>
+<Units_1>	<Units_2>	<Units_3>	<Units_4>
+<Comment_1>	<Comment_2>	<Comment_3>	<Comment_4>
+<Data_Row_1> ...
+```
+
+- **Line 1 (Short Name & Designation):** OriginLab column notation with automatic independent `(X)` and dependent `(Y)` axis mapping.
+- **Line 2 (Long Name):** Descriptive spectroscopic and chemical labels used for plot titles and axis naming.
+- **Line 3 (Units):** Physical dimensions (e.g. `cm^-1`, `degrees`, `eV`, `Counts`, `nm`).
+- **Line 4 (Comments):** Processing provenance, baseline subtraction methods, and deconvolution details used automatically in plot legends.
+- **Excel Ingestion (`.xlsx`):** Bundled inside every 1-click ZIP package with the identical 4-tier header layout.
+
+### 2. LabPlot ASCII Standard (`.dat`)
 ```text
 # ==============================================================================
 # LabPlot ASCII Matrix / Data Table

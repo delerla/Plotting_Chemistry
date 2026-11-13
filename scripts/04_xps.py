@@ -14,7 +14,7 @@ if str(BASE_DIR) not in sys.path:
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from modules.export_utils import save_publication_figure, export_labplot_ascii
+from modules.export_utils import save_publication_figure, export_labplot_ascii, export_originlab_ascii
 from modules.file_parser import load_smart_file
 from modules.xps_module import deconvolve_xps, generate_benchmark_xps_data
 DEFAULT_DATA_FILE = BASE_DIR / "data" / "xps" / "c1s_high_res.csv"
@@ -79,6 +79,18 @@ def main():
     export_labplot_ascii(
         labplot_df,
         filepath=ascii_out,
+        title="High-Resolution C 1s XPS Spectrum Shirley Deconvolution",
+        units=units,
+        comments=[
+            f"Referenced to C 1s sp3 at 284.8 eV (BE shift: {summary['be_shift_applied_eV']} eV)",
+            f"Voigt model deconvolution via lmfit (R2 = {summary['r_squared']})"
+        ]
+    )
+
+    origin_out = OUTPUT_DIR / "C1s_XPS_Deconvolution_OriginLab.dat"
+    export_originlab_ascii(
+        labplot_df,
+        filepath=origin_out,
         title="High-Resolution C 1s XPS Spectrum Shirley Deconvolution",
         units=units,
         comments=[

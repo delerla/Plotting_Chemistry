@@ -27,7 +27,7 @@ from core.preprocessing import (
 )
 from knowledge_base import ALL_FTIR_DOMAINS
 from knowledge_base.benchmark_data import generate_benchmark_ftir
-from modules.export_utils import get_figure_bytes, get_labplot_ascii_bytes
+from modules.export_utils import get_figure_bytes, get_labplot_ascii_bytes, get_originlab_ascii_bytes
 from visualizer.plot_ftir import (
     render_ftir_deconvolution_plot,
     render_ftir_stacked_plot,
@@ -103,7 +103,9 @@ def run_suite():
     )
     png_bytes = get_figure_bytes(fig_dec, "png", dpi=600)
     dat_bytes = get_labplot_ascii_bytes(lp_dec, title="FTIR Test Matrix")
+    origin_bytes = get_originlab_ascii_bytes(lp_dec, title="FTIR Test Matrix")
     assert len(png_bytes) > 10000 and b"Observed_Absorbance" in dat_bytes
+    assert len(origin_bytes) > 0 and b"A(X)" in origin_bytes and b"B(Y)" in origin_bytes
     plt.close(fig_dec)
 
     fig_stack, lp_stack, det_map = render_ftir_stacked_plot(

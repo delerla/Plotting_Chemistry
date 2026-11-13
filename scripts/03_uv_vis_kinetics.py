@@ -14,7 +14,7 @@ if str(BASE_DIR) not in sys.path:
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from modules.export_utils import save_publication_figure, export_labplot_ascii
+from modules.export_utils import save_publication_figure, export_labplot_ascii, export_originlab_ascii
 from modules.file_parser import load_smart_file
 from modules.uv_vis_module import process_and_plot_uv_vis, generate_benchmark_uv_vis_data
 DEFAULT_SPECTRA_FILE = BASE_DIR / "data" / "uv_vis" / "uv_vis_spectra.csv"
@@ -71,6 +71,14 @@ def main():
         units=units_spectra,
         comments=["Dye photodegradation time-series", f"Peak lambda = {metrics['lambda_max_nm']} nm"]
     )
+    origin_spectra_out = OUTPUT_DIR / "Time_Resolved_UV_Vis_OriginLab.dat"
+    export_originlab_ascii(
+        labplot_spectra,
+        filepath=origin_spectra_out,
+        title="Time-Resolved UV-Vis Absorbance Spectra Series",
+        units=units_spectra,
+        comments=["Dye photodegradation time-series", f"Peak lambda = {metrics['lambda_max_nm']} nm"]
+    )
 
     kinetics_ascii_out = OUTPUT_DIR / "Photodegradation_Kinetics_Matrix.dat"
     units_kinetics = {
@@ -87,6 +95,17 @@ def main():
     export_labplot_ascii(
         labplot_kinetics,
         filepath=kinetics_ascii_out,
+        title="Dye Photodegradation Kinetics Data and Regression Fits",
+        units=units_kinetics,
+        comments=[
+            f"k_app = {metrics['k_pseudo_first_order_min-1']} min^-1, R2 = {metrics['R2_pseudo_first_order']}",
+            f"k2 = {metrics['k_pseudo_second_order']}, R2 = {metrics['R2_pseudo_second_order']}"
+        ]
+    )
+    origin_kinetics_out = OUTPUT_DIR / "Photodegradation_Kinetics_OriginLab.dat"
+    export_originlab_ascii(
+        labplot_kinetics,
+        filepath=origin_kinetics_out,
         title="Dye Photodegradation Kinetics Data and Regression Fits",
         units=units_kinetics,
         comments=[
