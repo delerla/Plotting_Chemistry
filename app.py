@@ -1,81 +1,58 @@
 """
-app.py - Automated Materials Characterization & Spectroscopic Analysis Hub
-Professional Scientific GUI powered by Streamlit, SciPy, lmfit, OpenCV, Matplotlib, and OpenPyXL.
-Equipped with:
-- Universal Ingestion (Excel, OriginLab, CSV, DAT, TXT, ASC, DPT, PRN, Images)
-- Physics-Based Technique Auto-Detection & Multi-Line Header Cleaning
-- Publication Journal Themes (Nature, Science, ACS, RSC, Monochrome)
-- 1-Click Complete Publication Package (.ZIP) Exporter
-- High-Precision Deconvolution & Crystallite Sizing Engine
+app.py - Materials Characterization & Computational Spectroscopic Analytics Hub
+Executive Master Gateway: Universal File & Data Analysis, Literature Reference Databank,
+and Direct Launchpad to Specialized Deep-Intelligence Studios.
+Platform Owner & Lead: Dr. Deler Langenberg
 """
 
 import sys
 from pathlib import Path
+
 BASE_DIR = Path(__file__).resolve().parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
 
 from modules.export_utils import (
     PUBLICATION_PALETTES,
-    build_analysis_bundle_zip,
-    get_figure_bytes,
-    get_labplot_ascii_bytes,
     get_originlab_ascii_bytes,
-    get_originlab_excel_bytes
+    get_originlab_excel_bytes,
+    get_labplot_ascii_bytes,
 )
 from modules.file_parser import load_smart_file
-from modules.ftir_module import process_and_plot_ftir, generate_benchmark_ftir_data
-from modules.xrd_module import process_and_plot_xrd, generate_benchmark_xrd_data
-from modules.uv_vis_module import process_and_plot_uv_vis, generate_benchmark_uv_vis_data
-from modules.xps_module import deconvolve_xps, generate_benchmark_xps_data
-from modules.sem_edx_module import (
-    analyze_sem_micrograph,
-    analyze_edx_spectrum,
-    generate_benchmark_sem_image,
-    generate_benchmark_edx_data
-)
 from modules.saudi_search_ui import render_saudi_alliance_explorer, render_sidebar_saudi_quick_search
 
 # Page configuration
 st.set_page_config(
-    page_title="Materials Characterization Hub",
+    page_title="Materials Characterization Hub - Master Gateway",
     page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Professional CSS Styling
+# Custom Styling
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
-    .main-header {
-        font-size: 1.85rem;
-        font-weight: 700;
-        color: #0f2b48;
-        margin-bottom: 0.15rem;
-        letter-spacing: -0.02em;
+    .hero-title {
+        font-size: 2.1rem;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.025em;
+        line-height: 1.2;
+        margin-bottom: 0.3rem;
     }
-    .sub-header {
-        font-size: 0.95rem;
+    .hero-subtitle {
+        font-size: 1.02rem;
         color: #475569;
-        margin-bottom: 1.2rem;
-    }
-    .smart-card {
-        background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fa 100%);
-        border: 1px solid #b8daff;
-        border-left: 5px solid #0066cc;
-        padding: 0.85rem 1.1rem;
-        border-radius: 6px;
-        margin-bottom: 1.2rem;
+        margin-bottom: 1.4rem;
+        line-height: 1.5;
     }
     .profile-card {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -84,7 +61,7 @@ st.markdown("""
         padding: 14px;
         margin-bottom: 1.2rem;
         border: 1px solid #334155;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     .badge {
         display: inline-block;
@@ -93,75 +70,109 @@ st.markdown("""
         font-size: 0.73rem;
         font-weight: 600;
         letter-spacing: 0.03em;
-        margin-left: 4px;
+        margin-right: 4px;
     }
-    .badge-blue {
-        background: #e0f2fe;
-        color: #0284c7;
-        border: 1px solid #bae6fd;
+    .badge-blue { background: #e0f2fe; color: #0284c7; }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-purple { background: #f3e8ff; color: #7e22ce; }
+    .badge-amber { background: #fef3c7; color: #b45309; }
+    .badge-dark { background: #334155; color: #f8fafc; }
+    .studio-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 1.1rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
-    .badge-green {
-        background: #dcfce7;
-        color: #16a34a;
-        border: 1px solid #bbf7d0;
+    .studio-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+        border-color: #cbd5e1;
     }
-    .badge-dark {
-        background: #1e293b;
-        color: #f8fafc;
-        border: 1px solid #334155;
-    }
-    .stDownloadButton button {
+    .ext-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
         width: 100%;
-        border-radius: 4px;
+        padding: 9px 16px;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        color: #ffffff !important;
         font-weight: 600;
-        transition: all 0.2s ease-in-out;
+        font-size: 0.92rem;
+        border-radius: 6px;
+        text-decoration: none !important;
+        border: none;
+        box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
     }
-    .stDownloadButton button:hover {
-        border-color: #0066cc;
-        color: #0066cc;
-    }
-    div[data-testid="stMetricValue"] {
-        font-size: 1.45rem;
-        font-weight: 700;
-        color: #0f2b48;
+    .ext-btn:hover {
+        background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+        color: #ffffff !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-TECHNIQUES = [
-    "0. 🌐 Scientific Gateway & Multi-Studio Portal",
-    "1. FTIR Spectroscopy",
-    "2. XRD Crystallography",
-    "3. UV-Vis & Dye Kinetics",
-    "4. XPS Core Deconvolution",
-    "5. SEM & EDX Microanalysis",
-    "6. 🇸🇦 Saudi Alliance Reference Explorer"
-]
+# Default Cloud URLs for Dedicated Studios
+STUDIO_URLS = {
+    "UV-Vis": {
+        "name": "UV-Vis & Photokinetics Studio",
+        "icon": "☀️",
+        "url": "https://delerla-uv-vis-studio.streamlit.app/",
+        "local_page": "pages/4_UV_Vis_Studio.py",
+        "local_port": 8505,
+        "class": "Photocatalysts · Solar Perovskites · Plasmonic Nanomaterials",
+        "desc": "Tauc plot optical bandgap extrapolation (Direct/Indirect Eg), Urbach defect tail energy (Eu), multi-order reaction kinetics (0th, PFO, PSO, Weber-Morris) & AIC/BIC ranking.",
+        "engine": "SciPy / Inflection Tangent Extrapolation"
+    },
+    "XPS": {
+        "name": "XPS Deep-Intelligence Studio",
+        "icon": "⚡",
+        "url": "https://delerla-xps-studio.streamlit.app/",
+        "local_page": "pages/1_XPS_Studio.py",
+        "local_port": 8502,
+        "class": "MOFs (UiO-66, ZIF-8) · Halide Perovskites · Carbon Nanofibers",
+        "desc": "Non-linear Voigt & Shirley baseline deconvolution, automated C 1s charge referencing (@ 284.8 eV), Pb⁰ metallic defect photolysis, and linker vacancy quantitation.",
+        "engine": "lmfit Voigt / Shirley Non-Linear Least Squares"
+    },
+    "XRD": {
+        "name": "XRD Crystallography Studio",
+        "icon": "💎",
+        "url": "https://delerla-xrd-studio.streamlit.app/",
+        "local_page": "pages/2_XRD_Studio.py",
+        "local_port": 8503,
+        "class": "Nanomaterials · Thin Films · Polymorph Mixtures",
+        "desc": "Cu Kα2 stripping, pseudo-Voigt profile deconvolution, Scherrer crystallite sizing (D), Williamson–Hall microstrain separation (ε), and Spurr–Myers polymorph quantification.",
+        "engine": "SciPy / lmfit Multi-Peak Profiling"
+    },
+    "FTIR": {
+        "name": "FTIR Spectroscopy Studio",
+        "icon": "🧪",
+        "url": "https://delerla-ftir-studio.streamlit.app/",
+        "local_page": "pages/3_FTIR_Studio.py",
+        "local_port": 8504,
+        "class": "Polymers · MOFs · Catalysts · Biomaterials",
+        "desc": "Attenuated Total Reflectance (ATR) crystal correction, AsLS / Rubberband baseline subtraction, 2nd-derivative shoulder peak discovery, and PAN stabilization cyclization index (Es).",
+        "engine": "SciPy / AsLS Baseline / Lorentz Band Deconvolution"
+    },
+    "SEM-EDX": {
+        "name": "SEM-EDX Microstructural Studio",
+        "icon": "🔬",
+        "url": "https://delerla-sem-edx-studio.streamlit.app/",
+        "local_page": "pages/5_SEM_EDX_Studio.py",
+        "local_port": 8506,
+        "class": "Nanoparticles · Grains · Nanofibers · Microstructures",
+        "desc": "Computer vision distance-watershed particle segmentation, Log-Normal / Weibull particle size distributions (d10, d50, d90, PDI), and EDX characteristic line elemental stoichiometry.",
+        "engine": "OpenCV / scikit-image / Peak Microanalysis"
+    }
+}
 
 ALL_SUPPORTED_EXTS = ["csv", "xlsx", "xls", "txt", "dat", "tsv", "ascii", "asc", "dpt", "prn", "xy", "png", "jpg", "tif", "tiff"]
 
-if "current_technique" not in st.session_state:
-    st.session_state.current_technique = TECHNIQUES[0]
-
-def safe_page_link(page_path, label, icon=None, help=None):
-    """
-    Safely render a Streamlit page link. If Streamlit's PagesManager has not
-    yet discovered the pages directory (e.g. on Streamlit Cloud before a container reboot),
-    gracefully fall back to an HTML link so the application never halts.
-    """
-    try:
-        st.page_link(page_path, label=label, icon=icon, help=help)
-    except Exception:
-        slug = Path(page_path).stem
-        target_url = f"/{slug}" if slug != "app" else "/"
-        display_text = f"{icon} {label}" if icon else label
-        st.markdown(
-            f'<a href="{target_url}" target="_self" style="display:inline-block; padding: 6px 12px; margin: 3px 0; background-color: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.88rem;">{display_text}</a>',
-            unsafe_allow_html=True
-        )
 
 # ==============================================================================
-# SIDEBAR CONTROLS & UNIVERSAL SMART INGESTION
+# SIDEBAR
 # ==============================================================================
 with st.sidebar:
     st.markdown("""
@@ -177,1062 +188,346 @@ with st.sidebar:
             Materials Chemistry & Computational Spectroscopic Analytics Hub
         </div>
         <div style="display: flex; gap: 6px; margin-top: 10px;">
-            <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="text-decoration: none; background: #334155; color: #f8fafc; padding: 4px 10px; border-radius: 4px; font-size: 0.74rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+            <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="text-decoration: none; background: #334155; color: #f8fafc; padding: 4px 10px; border-radius: 4px; font-size: 0.74rem; font-weight: 600;">
                 ⭐ GitHub
             </a>
-            <a href="mailto:delerla@yahoo.de" style="text-decoration: none; background: #0284c7; color: #ffffff; padding: 4px 10px; border-radius: 4px; font-size: 0.74rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+            <a href="mailto:delerla@yahoo.de" style="text-decoration: none; background: #0284c7; color: #ffffff; padding: 4px 10px; border-radius: 4px; font-size: 0.74rem; font-weight: 600;">
                 ✉️ Email
             </a>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### ⚙️ Analytical Settings")
-    selected_theme = st.selectbox(
-        "🎨 Publication Color Palette:",
-        list(PUBLICATION_PALETTES.keys()),
-        index=2,
-        help="Applies standard editorial color palettes matching top scientific journals."
-    )
+    st.markdown("### 🧭 Dedicated Studio Directory")
+    st.caption("1-Click launch to external standalone intelligence studios:")
+    for key, studio in STUDIO_URLS.items():
+        st.markdown(
+            f'<a href="{studio["url"]}" target="_blank" style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; margin: 3px 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; text-decoration: none; color: #1e293b; font-size: 0.86rem; font-weight: 600;">'
+            f'{studio["icon"]} {studio["name"]}'
+            f'</a>',
+            unsafe_allow_html=True
+        )
 
     st.markdown("---")
-    st.markdown("### ⚡ Smart Universal Dropzone")
-    st.caption("Upload any file (Excel, OriginLab export, CSV, DAT, ASC, DPT, Micrograph):")
-    smart_uploaded = st.file_uploader(
-        "Drop Any File for Auto-Detection",
-        type=ALL_SUPPORTED_EXTS,
-        key="smart_global_uploader",
-        help="Cleans multi-line headers, handles comma decimals, and detects technique automatically."
-    )
-    
-    if smart_uploaded is not None:
-        file_bytes = smart_uploaded.read()
-        smart_df, smart_img, meta = load_smart_file(file_bytes, filename=smart_uploaded.name)
-        
-        if meta.get('detected_technique'):
-            target_tech = meta['detected_technique']
-            matched_tech = next((t for t in TECHNIQUES if t[:2] == target_tech[:2]), target_tech)
-            st.session_state["smart_data"] = {
-                'df': smart_df,
-                'img': smart_img,
-                'meta': meta,
-                'matched_tech': matched_tech
-            }
-            if st.button(f"🎯 Switch to {matched_tech[:6]}", key="btn_switch_tech"):
-                st.session_state.current_technique = matched_tech
-                st.rerun()
-
-    st.markdown("---")
-    st.markdown("### 📑 Module Navigation")
-    selected_tech = st.radio(
-        "Select Technique:",
-        TECHNIQUES,
-        index=TECHNIQUES.index(st.session_state.current_technique) if st.session_state.current_technique in TECHNIQUES else 0,
-        key="radio_technique"
-    )
-    st.session_state.current_technique = selected_tech
-
-    st.markdown("---")
-    with st.expander("🧭 Dedicated Intelligence Studios", expanded=True):
-        st.markdown("*1-Click stream links to domain-specific platforms:*")
-        safe_page_link("pages/1_XPS_Studio.py", label="XPS Intelligence Studio", icon="⚡")
-        safe_page_link("pages/2_XRD_Studio.py", label="XRD Crystallography Studio", icon="💎")
-        safe_page_link("pages/3_FTIR_Studio.py", label="FTIR Spectroscopy Studio", icon="🧪")
-        safe_page_link("pages/4_UV_Vis_Studio.py", label="UV-Vis & Photokinetics Studio", icon="☀️")
-        safe_page_link("pages/5_SEM_EDX_Studio.py", label="SEM-EDX Microstructural Studio", icon="🔬")
-
-    with st.expander("🇸🇦 Saudi Research Alliance (KAUST · KFUPM · KACST · IAU)", expanded=False):
+    with st.expander("🇸🇦 Saudi Research Alliance", expanded=False):
         st.markdown("""
-        **Cross-Institutional Reference Databank**
-        
+        **Cross-Institutional Reference Databank**  
         Audited benchmarks spanning **KAUST**, **KFUPM**, **KACST**, and **IAU** (`iau.edu.sa`).
         """)
-        if st.button("🚀 Open Literature & Materials Explorer", key="btn_open_saudi_explorer", use_container_width=True):
-            st.session_state.current_technique = TECHNIQUES[6]
-            st.rerun()
         render_sidebar_saudi_quick_search()
-        st.markdown("""
-        *Dedicated standalone studios: port 8502 (XPS), 8503 (XRD), 8504 (FTIR), 8505 (UV-Vis), 8506 (SEM-EDX).*
-        """)
 
     with st.expander("📖 Citation & Software Attribution", expanded=False):
         st.markdown("""
         If you utilize this hub in academic publications, theses, or research reports, please cite:
-        ```bibtex
-        @software{langenberg_materials_hub_2026,
-          author = {Dr. Deler Langenberg},
-          title = {Automated Materials Characterization and Spectroscopic Analysis Hub},
-          year = {2026},
-          publisher = {GitHub},
-          url = {https://github.com/delerla/Plotting_Chemistry}
-        }
+        ```text
+        Langenberg, D. Materials Characterization & Computational 
+        Spectroscopic Analytics Hub: Automated Multi-Technique 
+        Deconvolution, Kinetics & Crystallite Sizing (2026).
+        Repository: https://github.com/delerla/Plotting_Chemistry
         ```
-        **Lead Author:** Dr. Deler Langenberg  
-        **Contact:** [delerla@yahoo.de](mailto:delerla@yahoo.de)  
-        **License:** MIT Open-Source
         """)
-    st.caption("OriginLab (.dat), LabPlot ASCII (.dat), 600 DPI PNG, Vector SVG & PDF exports enabled.")
+
 
 # ==============================================================================
-# GLOBAL BRANDING & HEADER BANNER
+# MAIN PAGE: EXECUTIVE MASTER GATEWAY
 # ==============================================================================
+st.markdown('<div class="hero-title">Materials Characterization & Computational Analytics Hub</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-subtitle">Executive Scientific Gateway: Universal Experimental File Triage, Comprehensive Data Analysis, Cross-Institutional Benchmarking, and Dedicated Domain Studios.</div>', unsafe_allow_html=True)
+
+# Executive Mission Banner
 st.markdown("""
-<div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 10px;">
-    <div>
-        <h1 style="margin: 0; padding: 0; font-size: 1.95rem; font-weight: 800; color: #0f2b48; letter-spacing: -0.02em;">
-            🔬 Materials Characterization & Spectroscopic Hub
-        </h1>
-        <div style="font-size: 0.90rem; color: #475569; margin-top: 3px;">
-            Open-source, publication-grade analytical suite for XRD, FTIR, UV-Vis, XPS & SEM/EDX.
+<div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f2b48 100%); color: #f8fafc; border-radius: 10px; padding: 22px 26px; margin-bottom: 1.8rem; border: 1px solid #334155; box-shadow: 0 4px 14px rgba(0,0,0,0.15);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px;">
+        <div>
+            <span class="badge" style="background:#0284c7; color:#ffffff;">MASTER SCIENTIFIC GATEWAY</span>
+            <span class="badge" style="background:#16a34a; color:#ffffff;">ORIGINLAB & LABPLOT CERTIFIED</span>
+            <span class="badge" style="background:#7c3aed; color:#ffffff;">SAUDI RESEARCH ALLIANCE</span>
+            <h2 style="color: #38bdf8; margin: 10px 0 6px 0; font-size: 1.55rem; font-weight: 800;">
+                High-Throughput Spectroscopic & Microstructural Intelligence
+            </h2>
+            <p style="color: #cbd5e1; font-size: 0.93rem; margin: 0; max-width: 860px; line-height: 1.5;">
+                This platform serves as the central master repository for materials characterization data analysis. 
+                Upload and inspect any raw experimental file below for physics auto-detection, browse cross-institutional 
+                literature standards (KAUST · KFUPM · KACST · IAU), and launch dedicated domain-specific studios operating 
+                in independent cloud containers with dedicated memory and machine learning models.
+            </p>
         </div>
-    </div>
-    <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-        <span class="badge badge-dark">Lead: Dr. Deler Langenberg</span>
-        <span class="badge badge-blue">v2.1 Pro</span>
-        <span class="badge badge-green">MIT License</span>
+        <div style="text-align: right; background: rgba(255,255,255,0.06); padding: 12px 18px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);">
+            <div style="font-size: 0.70rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Platform Owner & Lead</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">Dr. Deler Langenberg</div>
+            <div style="font-size: 0.78rem; color: #38bdf8; margin-top: 2px;">Computational Chemistry Specialist</div>
+        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# Smart Ingestion Notification Banner
-if "smart_data" in st.session_state:
-    s_info = st.session_state["smart_data"]
-    s_meta = s_info['meta']
+
+# ==============================================================================
+# SECTION 1: DEDICATED DOMAIN INTELLIGENCE STUDIOS (EXTERNAL LAUNCHPAD)
+# ==============================================================================
+st.markdown("### 🚀 Specialized Domain Intelligence Studios")
+st.markdown("Each technique operates in its own **independent cloud container** with isolated high-throughput compute, dedicated machine learning models, and zero memory cross-contamination. Click **Launch Dedicated Studio** to open the external platform:")
+
+c_row1_1, c_row1_2 = st.columns(2)
+
+with c_row1_1:
+    # Card 1: UV-Vis
+    u_info = STUDIO_URLS["UV-Vis"]
     st.markdown(f"""
-    <div class="smart-card">
-        <strong>📂 Ingested File:</strong> <code>{s_meta['filename']}</code> ({s_meta['format']}) &nbsp;•&nbsp; 
-        <strong>Detected Technique:</strong> <b>{s_meta['detected_technique']}</b> (<code>{s_meta['confidence']*100:.0f}% confidence</code>)<br>
-        <small style="color: #444444;">{s_meta['reason']}</small>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    with st.expander("🔍 Inspect Cleaned Header & Numerical Table", expanded=False):
-        if s_info['df'] is not None:
-            st.write(f"Cleaned {s_meta['rows']} rows and {len(s_meta['columns'])} columns:")
-            st.dataframe(s_info['df'].head(8), use_container_width=True)
-        elif s_info['img'] is not None:
-            st.write(f"Micrograph Dimensions: {s_info['img'].shape}")
-
-technique = st.session_state.current_technique
-
-# ==============================================================================
-# 0. EXECUTIVE SCIENTIFIC GATEWAY & MULTI-STUDIO SWITCHBOARD
-# ==============================================================================
-if technique.startswith("0"):
-    st.markdown('<div class="main-header">🌐 Materials Characterization & Computational Spectroscopic Analytics Hub</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Unified Academic & Industrial Gateway: Machine-Learning Assisted Deconvolution, Crystallography, Reaction Kinetics, and Microanalysis</div>', unsafe_allow_html=True)
-
-    # Hero Banner
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f2b48 100%); color: #f8fafc; border-radius: 10px; padding: 22px 26px; margin-bottom: 1.5rem; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
-            <div>
-                <span class="badge" style="background:#0284c7; color:#ffffff; font-size:0.75rem;">RESEARCH GATEWAY</span>
-                <span class="badge" style="background:#16a34a; color:#ffffff; font-size:0.75rem;">ORIGINLAB & LABPLOT INTEROPERABILITY</span>
-                <span class="badge" style="background:#7c3aed; color:#ffffff; font-size:0.75rem;">SAUDI RESEARCH ALLIANCE</span>
-                <h2 style="color: #38bdf8; margin: 10px 0 6px 0; font-size: 1.6rem; font-weight: 800;">Cross-Technique Spectroscopic & Microstructural Intelligence</h2>
-                <p style="color: #cbd5e1; font-size: 0.95rem; margin: 0; max-width: 820px; line-height: 1.45;">
-                    Empowering computational materials chemistry with automated baseline subtraction (AsLS / Shirley),
-                    crystallite sizing (Scherrer & Williamson–Hall), reaction kinetics (PFO / PSO / Weber-Morris),
-                    optical bandgaps (Direct/Indirect Tauc & Urbach tail), and computer vision particle morphology.
-                </p>
-            </div>
-            <div style="text-align: right; background: rgba(255,255,255,0.06); padding: 12px 18px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                <div style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Platform Owner & Lead</div>
-                <div style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">Dr. Deler Langenberg</div>
-                <div style="font-size: 0.78rem; color: #38bdf8; margin-top: 2px;">Materials Chemistry Specialist</div>
-            </div>
+    <div class="studio-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">{u_info['icon']} {u_info['name']}</div>
+            <span class="badge badge-amber">Photokinetics & Bandgap</span>
         </div>
+        <div style="font-size: 0.81rem; color: #0369a1; font-weight: 600; margin-bottom: 6px;">{u_info['class']}</div>
+        <div style="font-size: 0.85rem; color: #475569; line-height: 1.45; margin-bottom: 12px;">{u_info['desc']}</div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 12px;"><strong>Engine:</strong> {u_info['engine']}</div>
+        <a href="{u_info['url']}" target="_blank" class="ext-btn">
+            🚀 Launch Dedicated UV-Vis Studio
+        </a>
     </div>
     """, unsafe_allow_html=True)
 
-    # Section 1: Five Dedicated Intelligence Studios (Interactive Cards)
-    st.markdown("### 🧭 Five Specialized Scientific Intelligence Studios")
-    st.markdown("*Select a dedicated platform below to launch its isolated high-performance environment or jump to its built-in module:*")
+    # Card 2: XPS
+    xp_info = STUDIO_URLS["XPS"]
+    st.markdown(f"""
+    <div class="studio-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">{xp_info['icon']} {xp_info['name']}</div>
+            <span class="badge badge-purple">Core-Level Voigt Deconvolution</span>
+        </div>
+        <div style="font-size: 0.81rem; color: #7e22ce; font-weight: 600; margin-bottom: 6px;">{xp_info['class']}</div>
+        <div style="font-size: 0.85rem; color: #475569; line-height: 1.45; margin-bottom: 12px;">{xp_info['desc']}</div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 12px;"><strong>Engine:</strong> {xp_info['engine']}</div>
+        <a href="{xp_info['url']}" target="_blank" class="ext-btn">
+            🚀 Launch Dedicated XPS Studio
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
 
-    card_c1, card_c2 = st.columns(2)
+    # Card 3: SEM-EDX
+    s_info = STUDIO_URLS["SEM-EDX"]
+    st.markdown(f"""
+    <div class="studio-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">{s_info['icon']} {s_info['name']}</div>
+            <span class="badge badge-green">Computer Vision & Sizing</span>
+        </div>
+        <div style="font-size: 0.81rem; color: #15803d; font-weight: 600; margin-bottom: 6px;">{s_info['class']}</div>
+        <div style="font-size: 0.85rem; color: #475569; line-height: 1.45; margin-bottom: 12px;">{s_info['desc']}</div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 12px;"><strong>Engine:</strong> {s_info['engine']}</div>
+        <a href="{s_info['url']}" target="_blank" class="ext-btn">
+            🚀 Launch Dedicated SEM-EDX Studio
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
 
-    with card_c1:
-        # Card 1: FTIR
-        with st.container(border=True):
-            st.markdown("#### 🧪 FTIR Spectroscopy Studio")
-            st.markdown("**Domain:** Attenuated Total Reflectance (ATR) Crystal Correction, AsLS / Rubberband Baseline Subtraction, 2nd-Derivative Shoulder Peak Discovery, and PAN Nanofiber Cyclization Index.")
-            st.caption("Engine: SciPy / AsLS Baseline / Lorentz Band Deconvolution")
-            btn_f1, btn_f2 = st.columns([1.5, 1])
-            with btn_f1:
-                safe_page_link("pages/3_FTIR_Studio.py", label="🚀 Launch Dedicated FTIR Studio", icon="🧪")
-            with btn_f2:
-                if st.button("📊 Open In-Hub Module", key="btn_gate_ftir", use_container_width=True):
-                    st.session_state.current_technique = TECHNIQUES[1]
-                    st.rerun()
+with c_row1_2:
+    # Card 4: XRD
+    x_info = STUDIO_URLS["XRD"]
+    st.markdown(f"""
+    <div class="studio-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">{x_info['icon']} {x_info['name']}</div>
+            <span class="badge badge-blue">Crystallography & Microstrain</span>
+        </div>
+        <div style="font-size: 0.81rem; color: #0284c7; font-weight: 600; margin-bottom: 6px;">{x_info['class']}</div>
+        <div style="font-size: 0.85rem; color: #475569; line-height: 1.45; margin-bottom: 12px;">{x_info['desc']}</div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 12px;"><strong>Engine:</strong> {x_info['engine']}</div>
+        <a href="{x_info['url']}" target="_blank" class="ext-btn">
+            🚀 Launch Dedicated XRD Studio
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
 
-        # Card 2: UV-Vis
-        with st.container(border=True):
-            st.markdown("#### ☀️ UV-Vis & Photokinetics Studio")
-            st.markdown("**Domain:** Multi-Order Reaction Kinetics (0th, Pseudo-1st, Pseudo-2nd Order, Weber-Morris), AIC/BIC Model Ranking, and Direct/Indirect Tauc Plot Bandgap ($E_g$) & Urbach Tail ($E_U$).")
-            st.caption("Engine: SciPy Kinetics Regression / Inflection Edge Extrapolation")
-            btn_u1, btn_u2 = st.columns([1.5, 1])
-            with btn_u1:
-                safe_page_link("pages/4_UV_Vis_Studio.py", label="🚀 Launch Dedicated UV-Vis Studio", icon="☀️")
-            with btn_u2:
-                if st.button("📊 Open In-Hub Module", key="btn_gate_uv", use_container_width=True):
-                    st.session_state.current_technique = TECHNIQUES[3]
-                    st.rerun()
+    # Card 5: FTIR
+    f_info = STUDIO_URLS["FTIR"]
+    st.markdown(f"""
+    <div class="studio-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">{f_info['icon']} {f_info['name']}</div>
+            <span class="badge badge-dark">Vibrational Intelligence</span>
+        </div>
+        <div style="font-size: 0.81rem; color: #475569; font-weight: 600; margin-bottom: 6px;">{f_info['class']}</div>
+        <div style="font-size: 0.85rem; color: #475569; line-height: 1.45; margin-bottom: 12px;">{f_info['desc']}</div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 12px;"><strong>Engine:</strong> {f_info['engine']}</div>
+        <a href="{f_info['url']}" target="_blank" class="ext-btn">
+            🚀 Launch Dedicated FTIR Studio
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
 
-        # Card 3: SEM-EDX
-        with st.container(border=True):
-            st.markdown("#### 🔬 SEM-EDX Microstructural Studio")
-            st.markdown("**Domain:** Computer Vision Particle Segmentation (Otsu & Distance-Watershed), Log-Normal / Weibull Particle Size Distributions ($d_{10}, d_{50}, d_{90}$, PDI), and EDX Stoichiometry.")
-            st.caption("Engine: OpenCV / scikit-image / Multi-Element Peak Deconvolution")
-            btn_s1, btn_s2 = st.columns([1.5, 1])
-            with btn_s1:
-                safe_page_link("pages/5_SEM_EDX_Studio.py", label="🚀 Launch Dedicated SEM-EDX Studio", icon="🔬")
-            with btn_s2:
-                if st.button("📊 Open In-Hub Module", key="btn_gate_sem", use_container_width=True):
-                    st.session_state.current_technique = TECHNIQUES[5]
-                    st.rerun()
+    # Card 6: Saudi Alliance Databank Card
+    st.markdown("""
+    <div class="studio-card" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-left: 5px solid #16a34a;">
+        <div style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+            🇸🇦 Saudi Research Alliance & Reference Databank
+        </div>
+        <div style="font-size: 0.81rem; color: #16a34a; font-weight: 600; margin-bottom: 6px;">
+            KAUST · KFUPM · KACST · IAU Reference Benchmarks
+        </div>
+        <div style="font-size: 0.85rem; color: #475569; line-height: 1.45; margin-bottom: 14px;">
+            Cross-institutional data repository containing verified, publication-audited standards for MOFs (UiO-66, ZIF-8), 
+            photovoltaic perovskites, and high-performance electrocatalysts with DOI citations.
+        </div>
+        <a href="#literature-benchmarks" class="ext-btn" style="background: #16a34a;">
+            🔍 Browse Databank Below
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
 
-    with card_c2:
-        # Card 4: XRD
-        with st.container(border=True):
-            st.markdown("#### 💎 XRD Crystallography Studio")
-            st.markdown("**Domain:** Cu Kα2 Stripping, Multi-Peak Pseudo-Voigt Profile Deconvolution, Scherrer Crystallite Sizing ($D$), Williamson–Hall Microstrain Separation ($\epsilon$), and Spurr–Myers Phase Quantification.")
-            st.caption("Engine: SciPy / lmfit Multi-Peak Diffraction Profiling")
-            btn_x1, btn_x2 = st.columns([1.5, 1])
-            with btn_x1:
-                safe_page_link("pages/2_XRD_Studio.py", label="🚀 Launch Dedicated XRD Studio", icon="💎")
-            with btn_x2:
-                if st.button("📊 Open In-Hub Module", key="btn_gate_xrd", use_container_width=True):
-                    st.session_state.current_technique = TECHNIQUES[2]
-                    st.rerun()
+st.markdown("---")
 
-        # Card 5: XPS
-        with st.container(border=True):
-            st.markdown("#### ⚡ XPS Deep-Intelligence Studio")
-            st.markdown("**Domain:** Iterative Shirley & Tougaard Baseline Extraction, High-Resolution Voigt Multi-Component Deconvolution, Automated C 1s Charge Referencing (@ 284.8 eV), and Defect Chemistry.")
-            st.caption("Engine: lmfit Voigt / Shirley Non-Linear Least Squares")
-            btn_xp1, btn_xp2 = st.columns([1.5, 1])
-            with btn_xp1:
-                safe_page_link("pages/1_XPS_Studio.py", label="🚀 Launch Dedicated XPS Studio", icon="⚡")
-            with btn_xp2:
-                if st.button("📊 Open In-Hub Module", key="btn_gate_xps", use_container_width=True):
-                    st.session_state.current_technique = TECHNIQUES[4]
-                    st.rerun()
 
-        # Card 6: Saudi Alliance Databank
-        with st.container(border=True):
-            st.markdown("#### 🇸🇦 Saudi Research Alliance & Literature Databank")
-            st.markdown("**Domain:** Audited Reference Spectroscopic Benchmarks spanning **KAUST**, **KFUPM**, **KACST**, and **IAU**. Curated datasets for MOFs, Solar Perovskites, and Catalysts.")
-            st.caption("Reference Hub: KAUST · KFUPM · KACST · IAU")
-            btn_sa1, btn_sa2 = st.columns([1.5, 1])
-            with btn_sa1:
-                if st.button("🔍 Explore Reference Databank", key="btn_gate_saudi_main", use_container_width=True):
-                    st.session_state.current_technique = TECHNIQUES[6]
-                    st.rerun()
-            with btn_sa2:
-                st.caption("DOI Benchmarks")
+# ==============================================================================
+# SECTION 2: SMART UNIVERSAL FILE & DATA ANALYSIS STATION
+# ==============================================================================
+st.markdown("### 📂 Smart Universal File & Data Analysis Station")
+st.markdown("""
+Upload **any experimental raw data file** below. The analytical engine cleans multi-line instrument headers, 
+evaluates numerical health and statistical distributions, and automatically determines the characterization 
+technique using physics-based coordinate profiling.
+""")
 
-    st.markdown("---")
+col_up, col_stat = st.columns([1.5, 1])
 
-    # Section 2: Universal Multi-File Dropzone & Auto-Triage
-    st.markdown("### 📂 Universal Multi-File Dropzone & Physics Auto-Detection")
-    st.markdown("Drop any experimental raw data file (`.xlsx`, `.dat`, `.csv`, `.txt`, `.asc`, `.dpt`, `.xy`, `.png`, `.jpg`, `.tif`). Our physics engine inspects the spectral coordinates and automatically triages the data to the matching studio.")
-
-    hub_upload = st.file_uploader(
-        "Upload Analytical File for Instant Auto-Detection:",
+with col_up:
+    uploaded_file = st.file_uploader(
+        "Drop Experimental File (Excel, OriginLab, CSV, DAT, TXT, ASC, DPT, PRN, Images):",
         type=ALL_SUPPORTED_EXTS,
-        key="gateway_smart_uploader"
+        key="master_file_uploader"
     )
 
-    if hub_upload is not None:
-        raw_hub_bytes = hub_upload.read()
-        p_df, p_img, p_meta = load_smart_file(raw_hub_bytes, filename=hub_upload.name)
-        st.session_state["smart_data"] = {
-            'df': p_df,
-            'img': p_img,
-            'meta': p_meta
-        }
-        
-        detected_t = p_meta.get("detected_technique", "Unknown")
-        st.success(f"**Auto-Detected:** {detected_t} ({p_meta['confidence']*100:.0f}% confidence) — {p_meta['reason']}")
-        
-        col_g1, col_g2 = st.columns(2)
-        with col_g1:
-            if "FTIR" in detected_t:
-                if st.button("🚀 Process in FTIR Module", use_container_width=True):
-                    st.session_state.current_technique = TECHNIQUES[1]
-                    st.rerun()
-            elif "XRD" in detected_t:
-                if st.button("🚀 Process in XRD Module", use_container_width=True):
-                    st.session_state.current_technique = TECHNIQUES[2]
-                    st.rerun()
-            elif "UV-Vis" in detected_t:
-                if st.button("🚀 Process in UV-Vis Module", use_container_width=True):
-                    st.session_state.current_technique = TECHNIQUES[3]
-                    st.rerun()
-            elif "XPS" in detected_t:
-                if st.button("🚀 Process in XPS Module", use_container_width=True):
-                    st.session_state.current_technique = TECHNIQUES[4]
-                    st.rerun()
-            elif "SEM" in detected_t:
-                if st.button("🚀 Process in SEM-EDX Module", use_container_width=True):
-                    st.session_state.current_technique = TECHNIQUES[5]
-                    st.rerun()
-
-        with col_g2:
-            st.caption(f"File specs: {p_meta.get('rows', 0)} rows, format {p_meta.get('format', 'unknown')}")
-
-    st.markdown("---")
-
-    # Section 3: Literature & Cross-Technique Correlation Matrix
-    st.markdown("### 📚 Literature Benchmarks & Institutional Correlations")
-    render_saudi_alliance_explorer()
-
-# ==============================================================================
-# 1. FTIR SPECTROSCOPY MODULE
-# ==============================================================================
-elif technique.startswith("1"):
-    st.markdown('<div class="main-header">Fourier-Transform Infrared (FTIR) Spectroscopy</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Multi-sample spectral stacking, Savitzky-Golay filtering, normalization, and vibrational band deconvolution.</div>', unsafe_allow_html=True)
-
+with col_stat:
     st.markdown("""
-    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 0.8rem;">
-        <strong>🧪 Dedicated FTIR Platform Available:</strong> 
-        Need ATR crystal correction, AsLS/Rubberband baseline subtraction, 2nd-derivative shoulder resolution, or PAN/MOF deconvolution?
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 0.83rem; line-height: 1.45;">
+        <strong>Supported Coordinate Profiling:</strong><br/>
+        • <strong>FTIR:</strong> Wavenumbers (4000 – 400 cm⁻¹)<br/>
+        • <strong>XRD:</strong> Diffraction angles 2θ (10° – 90°)<br/>
+        • <strong>UV-Vis:</strong> Wavelengths (200 – 900 nm)<br/>
+        • <strong>XPS:</strong> Binding energy (1200 – 0 eV)<br/>
+        • <strong>SEM:</strong> Pixel micrographs & EDX spectra
     </div>
     """, unsafe_allow_html=True)
-    safe_page_link("pages/3_FTIR_Studio.py", label="🚀 Launch Dedicated FTIR Spectroscopy Studio (1-Click Stream Page)", icon="🧪")
 
-    col_ctrl, col_view = st.columns([1, 2.5])
+if uploaded_file is not None:
+    raw_bytes = uploaded_file.read()
+    parsed_df, parsed_img, meta = load_smart_file(raw_bytes, filename=uploaded_file.name)
     
-    with col_ctrl:
-        st.subheader("Data & Parameters")
-        data_source = st.radio("Data Source:", ["Benchmark Spectra", "Upload File (Excel / Origin / CSV / DAT)"], key="ftir_src")
-        
-        if data_source != "Benchmark Spectra":
-            up_file = st.file_uploader(
-                "Upload File (Col 1: Wavenumber, Subsequent: %T)",
-                type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "asc", "dpt"],
-                key="ftir_up"
-            )
-            if up_file is not None:
-                parsed_df, _, meta_up = load_smart_file(up_file.read(), filename=up_file.name)
-                if parsed_df is not None and not parsed_df.empty:
-                    df_ftir = parsed_df
-                    st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
-                else:
-                    st.error("Parsing failed. Using benchmark.")
-                    df_ftir = generate_benchmark_ftir_data()
-            elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("1"):
-                df_ftir = st.session_state["smart_data"]['df']
-            else:
-                st.info("Awaiting upload. Showing benchmark.")
-                df_ftir = generate_benchmark_ftir_data()
-        else:
-            default_path = BASE_DIR / "data" / "ftir" / "ftir_data.csv"
-            df_ftir = pd.read_csv(default_path) if default_path.exists() else generate_benchmark_ftir_data()
-
-        if df_ftir is not None and not df_ftir.empty and df_ftir.shape[1] > 1:
-            all_ftir_cols = list(df_ftir.columns)
-            def_idx = 0
-            for i, c in enumerate(all_ftir_cols):
-                if any(k in str(c).lower() for k in ['wavenumber', 'cm-1', 'cm^-1']):
-                    def_idx = i
-                    break
-            col_x_ftir = st.selectbox("Wavenumber (X-Axis):", all_ftir_cols, index=def_idx, key="ftir_col_x")
-            avail_ftir = [c for c in all_ftir_cols if c != col_x_ftir]
-            sel_ftir = st.multiselect("Spectra to Display:", avail_ftir, default=avail_ftir, key="ftir_col_y")
-            if sel_ftir:
-                df_ftir = df_ftir[[col_x_ftir] + sel_ftir]
-
-        ftir_mode = st.selectbox("Display Mode:", ["Transmittance (%T)", "Absorbance (A = -log10 T)"])
-        norm_mode = st.selectbox("Normalization:", ["None", "Min-Max (0 to 1)", "Zero Baseline"])
-        step_offset = st.slider("Stacking Offset", min_value=0.0, max_value=80.0, value=35.0, step=5.0)
-        sg_window = st.slider("Savitzky-Golay Window", min_value=5, max_value=35, value=11, step=2)
-        sg_poly = st.slider("Polynomial Order", min_value=1, max_value=4, value=2, step=1)
-        prominence = st.slider("Peak Detection Prominence", min_value=1.0, max_value=15.0, value=4.0, step=0.5)
-
-    with col_view:
-        fig_ftir, ax_ftir, peaks_dict, labplot_ftir_df = process_and_plot_ftir(
-            df_ftir,
-            step_offset=step_offset,
-            sg_window=sg_window,
-            sg_poly=sg_poly,
-            prominence=prominence,
-            mode=ftir_mode,
-            normalization=norm_mode,
-            theme=selected_theme
-        )
-        st.pyplot(fig_ftir)
-
-        with st.expander("📊 Detected Vibrational Absorption Bands", expanded=True):
-            peak_rows = []
-            for smp, p_list in peaks_dict.items():
-                peak_rows.append({"Sample": smp, "Detected Bands (cm⁻¹)": ", ".join(map(str, p_list)) if p_list else "None detected"})
-            summary_df = pd.DataFrame(peak_rows)
-            st.dataframe(summary_df, use_container_width=True)
-
-        st.markdown("#### 📥 Publication Export Center")
-        # 1-Click Complete ZIP Package
-        zip_bytes = build_analysis_bundle_zip(
-            fig_ftir,
-            base_name="FTIR_Stacked_Analysis",
-            labplot_df=labplot_ftir_df,
-            summary_data=summary_df,
-            title="FTIR Stacked Spectra with Savitzky-Golay Filtering",
-            units={'Wavenumber_cm-1': 'cm^-1'}
-        )
-        st.download_button(
-            "📦 Download Complete Publication Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF, Report)",
-            data=zip_bytes,
-            file_name="FTIR_Publication_Package.zip",
-            mime="application/zip",
-            type="primary",
-            use_container_width=True
-        )
-        
-        c_left, c_right = st.columns(2)
-        with c_left:
-            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
-            st.download_button(
-                "📊 Export OriginLab Matrix (.dat)",
-                data=get_originlab_ascii_bytes(labplot_ftir_df, title="FTIR Matrix", units={'Wavenumber_cm-1': 'cm^-1'}),
-                file_name="FTIR_OriginLab.dat",
-                mime="text/plain",
-                use_container_width=True,
-                help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
-            )
-            st.download_button(
-                "📗 Export OriginLab Workbook (.xlsx)",
-                data=get_originlab_excel_bytes(labplot_ftir_df, title="FTIR Matrix", units={'Wavenumber_cm-1': 'cm^-1'}),
-                file_name="FTIR_OriginLab.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                help="OriginLab-ready Excel workbook with 4-tier metadata header."
-            )
-            st.download_button(
-                "📈 Export LabPlot Matrix (.dat)",
-                data=get_labplot_ascii_bytes(labplot_ftir_df, title="FTIR Matrix", units={'Wavenumber_cm-1': 'cm^-1'}),
-                file_name="FTIR_LabPlot.dat",
-                mime="text/plain",
-                use_container_width=True,
-                help="LabPlot ASCII data table with metadata header."
-            )
-        with c_right:
-            st.markdown("**🖼️ Publication Graphics:**")
-            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_ftir, 'png', dpi=600), file_name="FTIR_600DPI.png", mime="image/png", use_container_width=True)
-            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_ftir, 'svg'), file_name="FTIR.svg", mime="image/svg+xml", use_container_width=True)
-            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_ftir, 'pdf'), file_name="FTIR.pdf", mime="application/pdf", use_container_width=True)
-        plt.close(fig_ftir)
-
-# ==============================================================================
-# 2. XRD MODULE
-# ==============================================================================
-elif technique.startswith("2"):
-    st.markdown('<div class="main-header">X-Ray Diffraction (XRD) & Scherrer Analysis</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Cu Kα (λ = 1.5406 Å) diffraction stacking, Lorentzian deconvolution, and crystallite size determination.</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 0.8rem;">
-        <strong>💎 Dedicated XRD Platform Available:</strong> 
-        Need Rietveld/profile deconvolution, Williamson–Hall microstrain separation, Cu Kα2 stripping, or Spurr–Myers phase quantification?
-    </div>
-    """, unsafe_allow_html=True)
-    safe_page_link("pages/2_XRD_Studio.py", label="🚀 Launch Dedicated XRD Crystallography Studio (1-Click Stream Page)", icon="💎")
-
-    col_ctrl, col_view = st.columns([1, 2.5])
+    tech_detected = meta.get("detected_technique", "Unknown")
+    confidence = meta.get("confidence", 0.0) * 100
     
-    with col_ctrl:
-        st.subheader("Data & Parameters")
-        data_source = st.radio("Data Source:", ["Benchmark Patterns", "Upload File (Excel / Origin / CSV / DAT / XY)"], key="xrd_src")
-        
-        if data_source != "Benchmark Patterns":
-            up_file = st.file_uploader(
-                "Upload File (Col 1: 2θ, Subsequent: Intensity)",
-                type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "xy", "prn", "asc"],
-                key="xrd_up"
-            )
-            if up_file is not None:
-                parsed_df, _, meta_up = load_smart_file(up_file.read(), filename=up_file.name)
-                if parsed_df is not None and not parsed_df.empty:
-                    df_xrd = parsed_df
-                    st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
-                else:
-                    st.error("Parsing failed. Using benchmark.")
-                    df_xrd = generate_benchmark_xrd_data()
-            elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("2"):
-                df_xrd = st.session_state["smart_data"]['df']
-            else:
-                st.info("Awaiting upload. Showing benchmark.")
-                df_xrd = generate_benchmark_xrd_data()
-        else:
-            default_path = BASE_DIR / "data" / "xrd" / "xrd_data.csv"
-            df_xrd = pd.read_csv(default_path) if default_path.exists() else generate_benchmark_xrd_data()
-
-        if df_xrd is not None and not df_xrd.empty and df_xrd.shape[1] > 1:
-            all_xrd_cols = list(df_xrd.columns)
-            def_idx = 0
-            for i, c in enumerate(all_xrd_cols):
-                if any(k in str(c).lower() for k in ['2θ', '2theta', 'theta', 'degree', 'angle', 'two_theta', 'two theta']):
-                    def_idx = i
-                    break
-            col_x_xrd = st.selectbox("2θ Angle (X-Axis):", all_xrd_cols, index=def_idx, key="xrd_col_x")
-            avail_xrd = [c for c in all_xrd_cols if c != col_x_xrd]
-            sel_xrd = st.multiselect("Active Samples to Display:", avail_xrd, default=avail_xrd, key="xrd_col_y")
-            if sel_xrd:
-                df_xrd = df_xrd[[col_x_xrd] + sel_xrd]
-
-        norm_max = st.checkbox("Normalize Intensity to Max Reflection (0 to 100%)", value=False)
-        offset_step = st.slider("Stacking Offset (a.u.)", min_value=50.0, max_value=1200.0, value=500.0, step=50.0)
-        fit_min = st.number_input("Fit Window 2θ Min (deg)", value=41.5, step=0.5)
-        fit_max = st.number_input("Fit Window 2θ Max (deg)", value=45.0, step=0.5)
-        wavelength = st.number_input("X-Ray Wavelength λ (nm)", value=0.15406, format="%.5f")
-        k_factor = st.number_input("Scherrer Constant K", value=0.9, format="%.2f")
-
-    with col_view:
-        fig_xrd, ax_xrd, fit_results, labplot_xrd_df = process_and_plot_xrd(
-            df_xrd,
-            offset_step=offset_step,
-            fit_range=(fit_min, fit_max),
-            wavelength_nm=wavelength,
-            k_factor=k_factor,
-            normalize_max=norm_max,
-            theme=selected_theme
-        )
-        st.pyplot(fig_xrd)
-
-        with st.expander("📊 Scherrer Crystallite Sizing Metrics", expanded=True):
-            fit_rows = []
-            for smp, res in fit_results.items():
-                if 'Error' not in res:
-                    fit_rows.append({
-                        "Pattern": smp,
-                        "Peak 2θ (°)": res['Peak_2Theta_deg'],
-                        "FWHM (°)": res['FWHM_deg'],
-                        "Crystallite Size D (nm)": res['Crystallite_Size_nm']
-                    })
-                else:
-                    fit_rows.append({"Pattern": smp, "Status": res['Error']})
-            summary_xrd_df = pd.DataFrame(fit_rows)
-            st.dataframe(summary_xrd_df, use_container_width=True)
-
-        st.markdown("#### 📥 Publication Export Center")
-        zip_bytes_xrd = build_analysis_bundle_zip(
-            fig_xrd,
-            base_name="XRD_Stacked_Analysis",
-            labplot_df=labplot_xrd_df,
-            summary_data=summary_xrd_df,
-            title="XRD Diffraction Stacked Patterns with Scherrer Analysis",
-            units={'TwoTheta_deg': 'degrees'}
-        )
-        st.download_button(
-            "📦 Download Complete Publication Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF, Report)",
-            data=zip_bytes_xrd,
-            file_name="XRD_Publication_Package.zip",
-            mime="application/zip",
-            type="primary",
-            use_container_width=True
-        )
-
-        c_left, c_right = st.columns(2)
-        with c_left:
-            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
-            st.download_button(
-                "📊 Export OriginLab Matrix (.dat)",
-                data=get_originlab_ascii_bytes(labplot_xrd_df, title="XRD Matrix", units={'TwoTheta_deg': 'degrees'}),
-                file_name="XRD_OriginLab.dat",
-                mime="text/plain",
-                use_container_width=True,
-                help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
-            )
-            st.download_button(
-                "📗 Export OriginLab Workbook (.xlsx)",
-                data=get_originlab_excel_bytes(labplot_xrd_df, title="XRD Matrix", units={'TwoTheta_deg': 'degrees'}),
-                file_name="XRD_OriginLab.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                help="OriginLab-ready Excel workbook with 4-tier metadata header."
-            )
-            st.download_button(
-                "📈 Export LabPlot Matrix (.dat)",
-                data=get_labplot_ascii_bytes(labplot_xrd_df, title="XRD Matrix", units={'TwoTheta_deg': 'degrees'}),
-                file_name="XRD_LabPlot.dat",
-                mime="text/plain",
-                use_container_width=True,
-                help="LabPlot ASCII data table with metadata header."
-            )
-        with c_right:
-            st.markdown("**🖼️ Publication Graphics:**")
-            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_xrd, 'png', dpi=600), file_name="XRD_600DPI.png", mime="image/png", use_container_width=True)
-            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_xrd, 'svg'), file_name="XRD.svg", mime="image/svg+xml", use_container_width=True)
-            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_xrd, 'pdf'), file_name="XRD.pdf", mime="application/pdf", use_container_width=True)
-        plt.close(fig_xrd)
-
-# ==============================================================================
-# 3. UV-VIS & DYE KINETICS MODULE
-# ==============================================================================
-elif technique.startswith("3"):
-    st.markdown('<div class="main-header">UV-Vis Spectroscopy & Photodegradation Kinetics</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Spectral evolution monitoring, multi-order kinetic regression (0th, 1st, 2nd order), and rate constant determination.</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 0.8rem;">
-        <strong>☀️ Dedicated UV-Vis Platform Available:</strong> 
-        Need Tauc plot optical bandgap extrapolation (Direct/Indirect), Urbach defect tail energy (Eu), or multi-chromophore deconvolution?
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 14px 18px; border-radius: 8px; margin: 1rem 0;">
+        <div style="font-size: 1.1rem; font-weight: 700; color: #166534;">
+            ✅ Auto-Detected Technique: {tech_detected} ({confidence:.0f}% confidence)
+        </div>
+        <div style="font-size: 0.88rem; color: #14532d; margin-top: 4px;">
+            <strong>Reasoning:</strong> {meta.get('reason', 'Coordinate spectrum matched standard physics domain.')}
+        </div>
     </div>
     """, unsafe_allow_html=True)
-    safe_page_link("pages/4_UV_Vis_Studio.py", label="🚀 Launch Dedicated UV-Vis & Photokinetics Studio (1-Click Stream Page)", icon="☀️")
 
-    col_ctrl, col_view = st.columns([1, 2.5])
-    
-    with col_ctrl:
-        st.subheader("Data & Parameters")
-        data_source = st.radio("Data Source:", ["Benchmark Spectra", "Upload File (Excel / Origin / CSV / DAT)"], key="uv_src")
-        
-        if data_source != "Benchmark Spectra":
-            up_file = st.file_uploader(
-                "Upload File (Col 1: Wavelength, Subsequent: Time Traces)",
-                type=["csv", "xlsx", "xls", "txt", "dat", "tsv"],
-                key="uv_up"
-            )
-            if up_file is not None:
-                parsed_df, _, meta_up = load_smart_file(up_file.read(), filename=up_file.name)
-                if parsed_df is not None and not parsed_df.empty:
-                    df_uv = parsed_df
-                    st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
-                else:
-                    st.error("Parsing failed. Using benchmark.")
-                    df_uv, _ = generate_benchmark_uv_vis_data()
-            elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("3"):
-                df_uv = st.session_state["smart_data"]['df']
-            else:
-                st.info("Awaiting upload. Showing benchmark.")
-                df_uv, _ = generate_benchmark_uv_vis_data()
-        else:
-            default_path = BASE_DIR / "data" / "uv_vis" / "uv_vis_spectra.csv"
-            df_uv = pd.read_csv(default_path) if default_path.exists() else generate_benchmark_uv_vis_data()[0]
+    # Studio Redirection Action Card
+    matched_studio = None
+    for k, v in STUDIO_URLS.items():
+        if k.lower() in tech_detected.lower():
+            matched_studio = v
+            break
 
-        target_lambda = st.number_input("Target Peak Wavelength λ_max (nm)", value=554.0, step=1.0)
-        c0_initial = st.number_input("Initial Dye Concentration C₀ (mg/L)", value=10.0, step=1.0)
+    if matched_studio:
+        st.markdown(f"""
+        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 14px 18px; margin-bottom: 1.2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <strong>🚀 Recommended Dedicated Studio:</strong> {matched_studio['name']}<br/>
+                <span style="font-size: 0.83rem; color: #0369a1;">Deep domain models, baseline deconvolution, and specialized machine learning ready.</span>
+            </div>
+            <div>
+                <a href="{matched_studio['url']}" target="_blank" style="display: inline-block; padding: 8px 18px; background: #0284c7; color: #ffffff !important; border-radius: 6px; text-decoration: none !important; font-weight: 700; font-size: 0.9rem;">
+                    Open in {matched_studio['name']} ➔
+                </a>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    with col_view:
-        fig_uv, axes_uv, uv_metrics, labplot_spectra, labplot_kinetics = process_and_plot_uv_vis(
-            df_uv,
-            lambda_target=target_lambda,
-            initial_conc=c0_initial,
-            theme=selected_theme
-        )
-        st.pyplot(fig_uv)
+    # Detailed Inspection Tabs
+    tab_data, tab_summary, tab_export = st.tabs(["📊 Cleaned Data Table", "📈 Statistical Profiling", "📦 OriginLab & LabPlot Direct Export"])
 
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("λ_max Monitored", f"{uv_metrics['lambda_max_nm']} nm")
-        m2.metric("Best Fit Model", f"{uv_metrics['best_kinetic_model']}")
-        m3.metric("k_app (PFO)", f"{uv_metrics['k_pseudo_first_order_min-1']:.4f} min⁻¹", f"R² = {uv_metrics['R2_pseudo_first_order']:.4f}")
-        m4.metric("Degradation Efficiency", f"{uv_metrics['final_degradation_pct']:.1f}%")
+    with tab_data:
+        if parsed_df is not None:
+            st.markdown(f"**Cleaned Structure:** `{meta.get('rows', 0)}` rows × `{len(meta.get('columns', []))}` columns | **Format:** `{meta.get('format', 'ASCII')}`")
+            st.dataframe(parsed_df, use_container_width=True)
+        elif parsed_img is not None:
+            st.markdown(f"**Micrograph Resolution:** `{parsed_img.shape[1]}` × `{parsed_img.shape[0]}` pixels")
+            st.image(parsed_img, caption="Loaded Micrograph Preview", use_column_width=True)
 
-        with st.expander("📊 Multi-Order Kinetics Table (0th, 1st, 2nd Order)", expanded=False):
-            st.dataframe(labplot_kinetics, use_container_width=True)
+    with tab_summary:
+        if parsed_df is not None:
+            st.markdown("##### Numerical Descriptive Statistics")
+            st.dataframe(parsed_df.describe().T, use_container_width=True)
+            
+            st.markdown("##### Column Coordinate Health")
+            health_rows = []
+            for col in parsed_df.columns:
+                series = pd.to_numeric(parsed_df[col], errors='coerce')
+                health_rows.append({
+                    "Column": col,
+                    "Data Type": str(parsed_df[col].dtype),
+                    "Finite Values": int(series.notna().sum()),
+                    "Missing / NaN": int(series.isna().sum()),
+                    "Min Value": float(series.min()) if series.notna().any() else np.nan,
+                    "Max Value": float(series.max()) if series.notna().any() else np.nan,
+                })
+            st.dataframe(pd.DataFrame(health_rows), use_container_width=True)
 
-        st.markdown("#### 📥 Publication Export Center")
-        zip_bytes_uv = build_analysis_bundle_zip(
-            fig_uv,
-            base_name="UV_Vis_Photodegradation_Kinetics",
-            labplot_df=labplot_kinetics,
-            summary_data=uv_metrics,
-            title="Photodegradation Kinetics Data and Fits"
-        )
-        st.download_button(
-            "📦 Download Complete Publication Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF, Report)",
-            data=zip_bytes_uv,
-            file_name="UV_Vis_Kinetics_Package.zip",
-            mime="application/zip",
-            type="primary",
-            use_container_width=True
-        )
-
-        c_left, c_right = st.columns(2)
-        with c_left:
-            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
-            st.download_button(
-                "📊 Export OriginLab Matrix (.dat)",
-                data=get_originlab_ascii_bytes(labplot_kinetics, title="Kinetics Matrix"),
-                file_name="Kinetics_OriginLab.dat",
-                mime="text/plain",
-                use_container_width=True,
-                help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
-            )
-            st.download_button(
-                "📗 Export OriginLab Workbook (.xlsx)",
-                data=get_originlab_excel_bytes(labplot_kinetics, title="Kinetics Matrix"),
-                file_name="Kinetics_OriginLab.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                help="OriginLab-ready Excel workbook with 4-tier metadata header."
-            )
-            st.download_button(
-                "📈 Export LabPlot Matrix (.dat)",
-                data=get_labplot_ascii_bytes(labplot_kinetics, title="Kinetics Matrix"),
-                file_name="Kinetics_LabPlot.dat",
-                mime="text/plain",
-                use_container_width=True,
-                help="LabPlot ASCII data table with metadata header."
-            )
-        with c_right:
-            st.markdown("**🖼️ Publication Graphics:**")
-            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_uv, 'png', dpi=600), file_name="UV_Vis_600DPI.png", mime="image/png", use_container_width=True)
-            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_uv, 'svg'), file_name="UV_Vis.svg", mime="image/svg+xml", use_container_width=True)
-            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_uv, 'pdf'), file_name="UV_Vis.pdf", mime="application/pdf", use_container_width=True)
-        plt.close(fig_uv)
-
-# ==============================================================================
-# 4. XPS DECONVOLUTION MODULE
-# ==============================================================================
-elif technique.startswith("4"):
-    st.markdown('<div class="main-header">X-Ray Photoelectron Spectroscopy (XPS) Deconvolution</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Iterative Shirley baseline subtraction, C 1s charge referencing (284.8 eV), and non-linear multi-peak Voigt profile fitting via lmfit.</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 0.8rem;">
-        <strong>⚡ Dedicated Deep-Intelligence Platform Available:</strong> 
-        Need domain-specific deconvolution for <b>MOFs</b> (UiO-66, ZIF-8, HKUST-1 defect analysis), <b>Solar Perovskites</b> (Pb⁰ photolysis defect detection, I/Pb ratios), or <b>PAN Nanofibers</b> (Cyclization Index)?
-    </div>
-    """, unsafe_allow_html=True)
-    safe_page_link("pages/1_XPS_Studio.py", label="🚀 Launch Dedicated XPS Intelligence Studio (1-Click Stream Page)", icon="⚡")
-
-    col_ctrl, col_view = st.columns([1, 2.5])
-    
-    with col_ctrl:
-        st.subheader("Data & Fitting Settings")
-        data_source = st.radio("Data Source:", ["Benchmark C 1s Core", "Upload File (Excel / Origin / CSV / DAT)"], key="xps_src")
-        
-        if data_source != "Benchmark C 1s Core":
-            up_file = st.file_uploader(
-                "Upload File (Col 1: Binding Energy eV, Col 2: Counts/s)",
-                type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "asc"],
-                key="xps_up"
-            )
-            if up_file is not None:
-                parsed_df, _, meta_up = load_smart_file(up_file.read(), filename=up_file.name)
-                if parsed_df is not None and not parsed_df.empty:
-                    df_xps = parsed_df
-                    st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
-                else:
-                    st.error("Parsing failed. Using benchmark.")
-                    df_xps = generate_benchmark_xps_data()
-            elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("4"):
-                df_xps = st.session_state["smart_data"]['df']
-            else:
-                st.info("Awaiting upload. Showing benchmark.")
-                df_xps = generate_benchmark_xps_data()
-        else:
-            default_path = BASE_DIR / "data" / "xps" / "c1s_high_res.csv"
-            df_xps = pd.read_csv(default_path) if default_path.exists() else generate_benchmark_xps_data()
-
-        apply_c1s = st.checkbox("Auto-Calibrate C 1s Charge Shift", value=True)
-        ref_be = st.number_input("C 1s Reference Position (eV)", value=284.8, step=0.1)
-
-    with col_view:
-        fig_xps, summary_xps, labplot_xps_df = deconvolve_xps(
-            df_xps,
-            c1s_calibration=apply_c1s,
-            expected_ref_be=ref_be,
-            theme=selected_theme
-        )
-        st.pyplot(fig_xps)
-
-        m1, m2, m3 = st.columns(3)
-        m1.metric("BE Shift Applied", f"{summary_xps['be_shift_applied_eV']:+.3f} eV")
-        m2.metric("Fit R²", f"{summary_xps['r_squared']:.4f}")
-        m3.metric("Reduced χ²", f"{summary_xps['redchi']:.1f}")
-
-        quant_df = pd.DataFrame(summary_xps['quantification_table'])
-        with st.expander("📊 Chemical State Quantification Table (at%)", expanded=True):
-            st.dataframe(quant_df, use_container_width=True)
-
-        st.markdown("#### 📥 Publication Export Center")
-        zip_bytes_xps = build_analysis_bundle_zip(
-            fig_xps,
-            base_name="XPS_Core_Deconvolution",
-            labplot_df=labplot_xps_df,
-            summary_data=quant_df,
-            title="XPS Core-Level Shirley Deconvolution Matrix",
-            units={'Binding_Energy_eV': 'eV'}
-        )
-        st.download_button(
-            "📦 Download Complete Publication Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF, Report)",
-            data=zip_bytes_xps,
-            file_name="XPS_Publication_Package.zip",
-            mime="application/zip",
-            type="primary",
-            use_container_width=True
-        )
-
-        c_left, c_right = st.columns(2)
-        with c_left:
-            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
-            st.download_button(
-                "📊 Export OriginLab Matrix (.dat)",
-                data=get_originlab_ascii_bytes(labplot_xps_df, title="XPS Matrix", units={'Binding_Energy_eV': 'eV'}),
-                file_name="XPS_OriginLab.dat",
-                mime="text/plain",
-                use_container_width=True,
-                help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
-            )
-            st.download_button(
-                "📗 Export OriginLab Workbook (.xlsx)",
-                data=get_originlab_excel_bytes(labplot_xps_df, title="XPS Matrix", units={'Binding_Energy_eV': 'eV'}),
-                file_name="XPS_OriginLab.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                help="OriginLab-ready Excel workbook with 4-tier metadata header."
-            )
-            st.download_button(
-                "📈 Export LabPlot Matrix (.dat)",
-                data=get_labplot_ascii_bytes(labplot_xps_df, title="XPS Matrix", units={'Binding_Energy_eV': 'eV'}),
-                file_name="XPS_LabPlot.dat",
-                mime="text/plain",
-                use_container_width=True,
-                help="LabPlot ASCII data table with metadata header."
-            )
-        with c_right:
-            st.markdown("**🖼️ Publication Graphics:**")
-            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_xps, 'png', dpi=600), file_name="XPS_600DPI.png", mime="image/png", use_container_width=True)
-            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_xps, 'svg'), file_name="XPS.svg", mime="image/svg+xml", use_container_width=True)
-            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_xps, 'pdf'), file_name="XPS.pdf", mime="application/pdf", use_container_width=True)
-        plt.close(fig_xps)
-
-# ==============================================================================
-# 5. SEM & EDX MICROANALYSIS MODULE
-# ==============================================================================
-elif technique.startswith("5"):
-    st.markdown('<div class="main-header">SEM Micrograph & EDX Elemental Microanalysis</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Particle segmentation, Otsu thresholding, diameter distributions, and EDX characteristic line elemental quantification.</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 0.8rem;">
-        <strong>🔬 Dedicated SEM-EDX Platform Available:</strong> 
-        Need distance-watershed particle segmentation, Log-Normal/Weibull particle size distributions (d10/d50/d90, PDI), or quantitative EDX stoichiometry?
-    </div>
-    """, unsafe_allow_html=True)
-    safe_page_link("pages/5_SEM_EDX_Studio.py", label="🚀 Launch Dedicated SEM-EDX Microstructural Studio (1-Click Stream Page)", icon="🔬")
-
-    tab_sem, tab_edx = st.tabs(["📷 SEM Particle Sizing", "⚡ EDX Spectroscopy"])
-
-    with tab_sem:
-        col_ctrl, col_view = st.columns([1, 2.5])
-        with col_ctrl:
-            st.subheader("SEM Settings")
-            sem_source = st.radio("Image Source:", ["Benchmark Micrograph", "Upload Image (PNG/TIFF/JPG/BMP)"], key="sem_src")
-            if sem_source != "Benchmark Micrograph":
-                uploaded_img = st.file_uploader(
-                    "Upload SEM Image",
-                    type=["png", "jpg", "jpeg", "tif", "tiff", "bmp"],
-                    key="sem_up"
-                )
-                if uploaded_img is not None:
-                    _, parsed_img, _ = load_smart_file(uploaded_img.read(), filename=uploaded_img.name)
-                    sem_img = parsed_img if parsed_img is not None else generate_benchmark_sem_image()
-                elif "smart_data" in st.session_state and st.session_state["smart_data"]['img'] is not None:
-                    sem_img = st.session_state["smart_data"]['img']
-                else:
-                    st.info("Awaiting image upload. Showing benchmark.")
-                    sem_img = generate_benchmark_sem_image()
-            else:
-                default_path = BASE_DIR / "data" / "sem_edx" / "sem_micrograph.png"
-                sem_img = cv2.imread(str(default_path), cv2.IMREAD_GRAYSCALE) if default_path.exists() else generate_benchmark_sem_image()
-
-            nm_per_px = st.number_input("Scale (nm / pixel)", value=2.5, min_value=0.1, step=0.5)
-            min_area = st.slider("Min Particle Area (pixels)", min_value=5, max_value=100, value=25, step=5)
-            min_circ = st.slider("Min Circularity Threshold", min_value=0.1, max_value=0.9, value=0.2, step=0.05)
-
-        with col_view:
-            fig_sem, stats_sem, df_particles = analyze_sem_micrograph(
-                sem_img,
-                scale_nm_per_pixel=nm_per_px,
-                min_area_px=min_area,
-                min_circularity=min_circ,
-                theme=selected_theme
-            )
-            st.pyplot(fig_sem)
-
-            s1, s2, s3, s4 = st.columns(4)
-            s1.metric("Particles Counted", f"{stats_sem['Total_Count']}")
-            s2.metric("Mean Diameter", f"{stats_sem['Mean_Diameter_nm']} nm", f"± {stats_sem['Std_Diameter_nm']} nm")
-            s3.metric("Median (D50)", f"{stats_sem['Median_Diameter_nm']} nm")
-            s4.metric("D10 / D90 Span", f"{stats_sem['D10_nm']} / {stats_sem['D90_nm']} nm")
-
-            st.markdown("#### 📥 Publication Export Center")
-            zip_bytes_sem = build_analysis_bundle_zip(
-                fig_sem,
-                base_name="SEM_Particle_Sizing",
-                labplot_df=df_particles,
-                summary_data=df_particles,
-                title="SEM Particle Morphological Sizing and Area Distribution"
-            )
-            st.download_button(
-                "📦 Download Complete SEM Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF)",
-                data=zip_bytes_sem,
-                file_name="SEM_Publication_Package.zip",
-                mime="application/zip",
-                type="primary",
-                use_container_width=True
-            )
-
-            c_left, c_right = st.columns(2)
-            with c_left:
-                st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
+    with tab_export:
+        if parsed_df is not None:
+            st.markdown("##### Direct OriginLab & LabPlot Universal Exporter")
+            st.caption("Convert this ingested data table directly into OriginLab-certified matrices or LabPlot files:")
+            
+            exp_c1, exp_c2, exp_c3 = st.columns(3)
+            with exp_c1:
+                dat_bytes = get_originlab_ascii_bytes(parsed_df, title=f"{tech_detected} Ingested Matrix")
                 st.download_button(
                     "📊 Export OriginLab Matrix (.dat)",
-                    data=get_originlab_ascii_bytes(df_particles, title="SEM Matrix"),
-                    file_name="SEM_OriginLab.dat",
+                    data=dat_bytes,
+                    file_name=f"{uploaded_file.name.split('.')[0]}_OriginLab.dat",
                     mime="text/plain",
-                    use_container_width=True,
-                    help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop."
+                    use_container_width=True
                 )
+            with exp_c2:
+                xlsx_bytes = get_originlab_excel_bytes(parsed_df, title=f"{tech_detected} Ingested Workbook")
                 st.download_button(
                     "📗 Export OriginLab Workbook (.xlsx)",
-                    data=get_originlab_excel_bytes(df_particles, title="SEM Matrix"),
-                    file_name="SEM_OriginLab.xlsx",
+                    data=xlsx_bytes,
+                    file_name=f"{uploaded_file.name.split('.')[0]}_OriginLab.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True,
-                    help="OriginLab-ready Excel workbook with 4-tier metadata header."
+                    use_container_width=True
                 )
+            with exp_c3:
+                labplot_bytes = get_labplot_ascii_bytes(parsed_df, title=f"{tech_detected} LabPlot Matrix")
                 st.download_button(
-                    "📈 Export LabPlot Matrix (.dat)",
-                    data=get_labplot_ascii_bytes(df_particles, title="SEM Matrix"),
-                    file_name="SEM_LabPlot.dat",
+                    "📉 Export LabPlot Matrix (.dat)",
+                    data=labplot_bytes,
+                    file_name=f"{uploaded_file.name.split('.')[0]}_LabPlot.dat",
                     mime="text/plain",
-                    use_container_width=True,
-                    help="LabPlot ASCII data table with metadata header."
+                    use_container_width=True
                 )
-            with c_right:
-                st.markdown("**🖼️ Publication Graphics:**")
-                st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_sem, 'png', dpi=600), file_name="SEM_600DPI.png", mime="image/png", use_container_width=True)
-                st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_sem, 'svg'), file_name="SEM.svg", mime="image/svg+xml", use_container_width=True)
-                st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_sem, 'pdf'), file_name="SEM.pdf", mime="application/pdf", use_container_width=True)
-            plt.close(fig_sem)
 
-    with tab_edx:
-        col_ctrl2, col_view2 = st.columns([1, 2.5])
-        with col_ctrl2:
-            st.subheader("EDX Settings")
-            edx_source = st.radio("Data Source:", ["Benchmark EDX", "Upload File (Excel / Origin / CSV / DAT)"], key="edx_src")
-            if edx_source != "Benchmark EDX":
-                up_edx = st.file_uploader(
-                    "Upload File (Col 1: Energy keV, Col 2: Counts)",
-                    type=["csv", "xlsx", "xls", "txt", "dat", "tsv"],
-                    key="edx_up"
-                )
-                if up_edx is not None:
-                    parsed_df, _, meta_up = load_smart_file(up_edx.read(), filename=up_edx.name)
-                    if parsed_df is not None and not parsed_df.empty:
-                        df_edx = parsed_df
-                        st.success(f"Cleaned {meta_up['rows']} rows from {meta_up['format']}")
-                    else:
-                        st.error("Parsing failed. Using benchmark.")
-                        df_edx = generate_benchmark_edx_data()
-                elif "smart_data" in st.session_state and st.session_state["smart_data"]['df'] is not None and st.session_state["smart_data"]['matched_tech'].startswith("5"):
-                    df_edx = st.session_state["smart_data"]['df']
-                else:
-                    st.info("Awaiting upload. Showing benchmark.")
-                    df_edx = generate_benchmark_edx_data()
-            else:
-                default_path = BASE_DIR / "data" / "sem_edx" / "edx_spectrum.csv"
-                df_edx = pd.read_csv(default_path) if default_path.exists() else generate_benchmark_edx_data()
+st.markdown("---")
 
-            prominence_edx = st.slider("Peak Detection Prominence", min_value=20.0, max_value=300.0, value=80.0, step=10.0)
-            tol_edx = st.slider("Line Match Tolerance (keV)", min_value=0.05, max_value=0.30, value=0.16, step=0.01)
-
-        with col_view2:
-            fig_edx, res_edx, labplot_edx = analyze_edx_spectrum(
-                df_edx,
-                prominence=prominence_edx,
-                peak_tolerance_keV=tol_edx,
-                theme=selected_theme
-            )
-            st.pyplot(fig_edx)
-
-            quant_edx_df = pd.DataFrame(res_edx['quantification'])
-            with st.expander("📊 Elemental Quantification (wt% and at%)", expanded=True):
-                st.dataframe(quant_edx_df, use_container_width=True)
-
-            st.markdown("#### 📥 Publication Export Center")
-            zip_bytes_edx = build_analysis_bundle_zip(
-                fig_edx,
-                base_name="EDX_Elemental_Quantification",
-                labplot_df=labplot_edx,
-                summary_data=quant_edx_df,
-                title="EDX Spectrum and Composition Table"
-            )
-            st.download_button(
-                "📦 Download Complete EDX Package (.ZIP: OriginLab .DAT & .XLSX, LabPlot .DAT, 600 DPI PNG, SVG, PDF, Report)",
-                data=zip_bytes_edx,
-                file_name="EDX_Publication_Package.zip",
-                mime="application/zip",
-                type="primary",
-                use_container_width=True,
-                key="edx_zip"
-            )
-
-            c_left, c_right = st.columns(2)
-            with c_left:
-                st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
-                st.download_button(
-                    "📊 Export OriginLab Matrix (.dat)",
-                    data=get_originlab_ascii_bytes(labplot_edx, title="EDX Matrix", units={'Energy_keV': 'keV', 'Counts': 'Counts'}),
-                    file_name="EDX_OriginLab.dat",
-                    mime="text/plain",
-                    use_container_width=True,
-                    help="OriginLab-compatible ASCII matrix with A(X), B(Y) column designations for direct drag & drop.",
-                    key="edx_origin"
-                )
-                st.download_button(
-                    "📗 Export OriginLab Workbook (.xlsx)",
-                    data=get_originlab_excel_bytes(labplot_edx, title="EDX Matrix", units={'Energy_keV': 'keV', 'Counts': 'Counts'}),
-                    file_name="EDX_OriginLab.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True,
-                    help="OriginLab-ready Excel workbook with 4-tier metadata header.",
-                    key="edx_origin_xlsx"
-                )
-                st.download_button(
-                    "📈 Export LabPlot Matrix (.dat)",
-                    data=get_labplot_ascii_bytes(labplot_edx, title="EDX Matrix"),
-                    file_name="EDX_LabPlot.dat",
-                    mime="text/plain",
-                    use_container_width=True,
-                    help="LabPlot ASCII data table with metadata header.",
-                    key="edx_dat"
-                )
-            with c_right:
-                st.markdown("**🖼️ Publication Graphics:**")
-                st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_edx, 'png', dpi=600), file_name="EDX_600DPI.png", mime="image/png", use_container_width=True, key="edx_png")
-                st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_edx, 'svg'), file_name="EDX.svg", mime="image/svg+xml", use_container_width=True, key="edx_svg")
-                st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_edx, 'pdf'), file_name="EDX.pdf", mime="application/pdf", use_container_width=True, key="edx_pdf")
-            plt.close(fig_edx)
 
 # ==============================================================================
-# 6. SAUDI ALLIANCE CROSS-UNIVERSITY LITERATURE & REFERENCE EXPLORER
+# SECTION 3: SAUDI RESEARCH ALLIANCE & LITERATURE BENCHMARKS
 # ==============================================================================
-elif technique.startswith("6"):
-    render_saudi_alliance_explorer()
-
-# ==============================================================================
-# COMMUNITY REVIEWS, USER WISHES & PEER FEEDBACK
-# ==============================================================================
-from modules.feedback_module import render_community_reviews
-render_community_reviews(active_app_name="Materials Characterization Hub")
-
-# ==============================================================================
-# GLOBAL SCIENTIFIC FOOTER
-# ==============================================================================
+st.markdown('<div id="literature-benchmarks"></div>', unsafe_allow_html=True)
+st.markdown("### 📚 Saudi Research Alliance & Global Literature Databank")
 st.markdown("""
-<div style="margin-top: 4.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.84rem; line-height: 1.65;">
-    <strong>Materials Characterization & Spectroscopic Analysis Hub</strong> • Open-Source Scientific Suite<br>
-    Engineered & Maintained by <strong>Dr. Deler Langenberg</strong> • 
-    <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="color: #0284c7; text-decoration: none; font-weight: 600;">GitHub Repository</a> • 
-    <a href="https://github.com/delerla/Plotting_Chemistry/issues" target="_blank" style="color: #0284c7; text-decoration: none; font-weight: 600;">Report Bug / Feature Request</a> • 
-    <a href="mailto:delerla@yahoo.de" style="color: #0284c7; text-decoration: none; font-weight: 600;">Contact: delerla@yahoo.de</a><br>
-    <small style="color: #94a3b8;">Publication outputs calibrated to 600 DPI (Nature, Science, ACS, RSC, Monochrome), OriginLab & LabPlot interoperability. © 2026 Dr. Deler Langenberg (MIT License).</small>
-</div>
-""", unsafe_allow_html=True)
+Cross-institutional audited reference benchmarks spanning **KAUST**, **KFUPM**, **KACST**, and **IAU**. 
+Search benchmark literature standards, crystal structures, reaction kinetics, and stoichiometry below:
+""")
+
+render_saudi_alliance_explorer()
+
+st.markdown("---")
+st.caption("Materials Characterization & Computational Spectroscopic Analytics Hub • Lead: Dr. Deler Langenberg • Open-Source MIT License")
