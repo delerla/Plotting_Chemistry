@@ -237,6 +237,7 @@ with st.sidebar:
         safe_page_link("pages/1_XPS_Studio.py", label="XPS Intelligence Studio", icon="⚡")
         safe_page_link("pages/2_XRD_Studio.py", label="XRD Crystallography Studio", icon="💎")
         safe_page_link("pages/3_FTIR_Studio.py", label="FTIR Spectroscopy Studio", icon="🧪")
+        safe_page_link("pages/4_UV_Vis_Studio.py", label="UV-Vis & Photokinetics Studio", icon="☀️")
 
     with st.expander("🇸🇦 Saudi Research Alliance (KAUST · KFUPM · KACST · IAU)", expanded=False):
         st.markdown("""
@@ -598,6 +599,14 @@ elif technique.startswith("2"):
 elif technique.startswith("3"):
     st.markdown('<div class="main-header">UV-Vis Spectroscopy & Photodegradation Kinetics</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Spectral evolution monitoring, multi-order kinetic regression (0th, 1st, 2nd order), and rate constant determination.</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 0.8rem;">
+        <strong>☀️ Dedicated UV-Vis Platform Available:</strong> 
+        Need Tauc plot optical bandgap extrapolation (Direct/Indirect), Urbach defect tail energy (Eu), or multi-chromophore deconvolution?
+    </div>
+    """, unsafe_allow_html=True)
+    safe_page_link("pages/4_UV_Vis_Studio.py", label="🚀 Launch Dedicated UV-Vis & Photokinetics Studio (1-Click Stream Page)", icon="☀️")
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
