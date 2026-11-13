@@ -443,7 +443,10 @@ with st.sidebar:
 # ==============================================================================
 # MAIN WORKSPACE HEADER
 # ==============================================================================
-st.page_link("app.py", label="← Return to Materials Characterization Multi-Technique Hub", icon="🏠")
+try:
+    st.page_link("app.py", label="← Return to Materials Characterization Multi-Technique Hub", icon="🏠")
+except Exception:
+    st.markdown('<a href="/" target="_self" style="display:inline-block; padding: 6px 14px; margin-bottom: 8px; background-color: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem;">🏠 ← Return to Materials Characterization Multi-Technique Hub</a>', unsafe_allow_html=True)
 st.markdown('<div class="xrd-header">💎 XRD Studio: X-Ray Diffraction Profile & Microstrain Suite</div>', unsafe_allow_html=True)
 st.markdown(f"""
 <div style="margin-bottom: 1.0rem;">

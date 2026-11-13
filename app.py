@@ -142,6 +142,23 @@ ALL_SUPPORTED_EXTS = ["csv", "xlsx", "xls", "txt", "dat", "tsv", "ascii", "asc",
 if "current_technique" not in st.session_state:
     st.session_state.current_technique = TECHNIQUES[0]
 
+def safe_page_link(page_path, label, icon=None, help=None):
+    """
+    Safely render a Streamlit page link. If Streamlit's PagesManager has not
+    yet discovered the pages directory (e.g. on Streamlit Cloud before a container reboot),
+    gracefully fall back to an HTML link so the application never halts.
+    """
+    try:
+        st.page_link(page_path, label=label, icon=icon, help=help)
+    except Exception:
+        slug = Path(page_path).stem
+        target_url = f"/{slug}" if slug != "app" else "/"
+        display_text = f"{icon} {label}" if icon else label
+        st.markdown(
+            f'<a href="{target_url}" target="_self" style="display:inline-block; padding: 6px 12px; margin: 3px 0; background-color: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.88rem;">{display_text}</a>',
+            unsafe_allow_html=True
+        )
+
 # ==============================================================================
 # SIDEBAR CONTROLS & UNIVERSAL SMART INGESTION
 # ==============================================================================
@@ -217,9 +234,9 @@ with st.sidebar:
     st.markdown("---")
     with st.expander("🧭 Dedicated Intelligence Studios", expanded=True):
         st.markdown("*1-Click stream links to domain-specific platforms:*")
-        st.page_link("pages/1_XPS_Studio.py", label="XPS Intelligence Studio", icon="⚡")
-        st.page_link("pages/2_XRD_Studio.py", label="XRD Crystallography Studio", icon="💎")
-        st.page_link("pages/3_FTIR_Studio.py", label="FTIR Spectroscopy Studio", icon="🧪")
+        safe_page_link("pages/1_XPS_Studio.py", label="XPS Intelligence Studio", icon="⚡")
+        safe_page_link("pages/2_XRD_Studio.py", label="XRD Crystallography Studio", icon="💎")
+        safe_page_link("pages/3_FTIR_Studio.py", label="FTIR Spectroscopy Studio", icon="🧪")
 
     with st.expander("🇸🇦 Saudi Research Alliance (KAUST · KFUPM · KACST · IAU)", expanded=False):
         st.markdown("""
@@ -308,7 +325,7 @@ if technique.startswith("1"):
         Need ATR crystal correction, AsLS/Rubberband baseline subtraction, 2nd-derivative shoulder resolution, or PAN/MOF deconvolution?
     </div>
     """, unsafe_allow_html=True)
-    st.page_link("pages/3_FTIR_Studio.py", label="🚀 Launch Dedicated FTIR Spectroscopy Studio (1-Click Stream Page)", icon="🧪")
+    safe_page_link("pages/3_FTIR_Studio.py", label="🚀 Launch Dedicated FTIR Spectroscopy Studio (1-Click Stream Page)", icon="🧪")
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
@@ -445,7 +462,7 @@ elif technique.startswith("2"):
         Need Rietveld/profile deconvolution, Williamson–Hall microstrain separation, Cu Kα2 stripping, or Spurr–Myers phase quantification?
     </div>
     """, unsafe_allow_html=True)
-    st.page_link("pages/2_XRD_Studio.py", label="🚀 Launch Dedicated XRD Crystallography Studio (1-Click Stream Page)", icon="💎")
+    safe_page_link("pages/2_XRD_Studio.py", label="🚀 Launch Dedicated XRD Crystallography Studio (1-Click Stream Page)", icon="💎")
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
@@ -696,7 +713,7 @@ elif technique.startswith("4"):
         Need domain-specific deconvolution for <b>MOFs</b> (UiO-66, ZIF-8, HKUST-1 defect analysis), <b>Solar Perovskites</b> (Pb⁰ photolysis defect detection, I/Pb ratios), or <b>PAN Nanofibers</b> (Cyclization Index)?
     </div>
     """, unsafe_allow_html=True)
-    st.page_link("pages/1_XPS_Studio.py", label="🚀 Launch Dedicated XPS Intelligence Studio (1-Click Stream Page)", icon="⚡")
+    safe_page_link("pages/1_XPS_Studio.py", label="🚀 Launch Dedicated XPS Intelligence Studio (1-Click Stream Page)", icon="⚡")
 
     col_ctrl, col_view = st.columns([1, 2.5])
     
