@@ -166,7 +166,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 🏛️ Target Materials Domain")
+    st.markdown("### 1. Material Domain & Preset")
     selected_domain = st.selectbox(
         "Field of Study:",
         list(ALL_DOMAINS.keys()),
@@ -205,8 +205,9 @@ with st.sidebar:
             st.caption("No matching benchmarks found.")
 
     st.markdown("---")
+    st.markdown("### 2. Publication Typography & Style")
     selected_theme = st.selectbox(
-        "🎨 Journal Color Palette:",
+        "Journal Color Palette:",
         list(PUBLICATION_PALETTES.keys()),
         index=2
     )
@@ -229,16 +230,17 @@ with st.sidebar:
         """)
 
     # Real-Time Domain Visitor Counter
-    from modules.counter_module import render_sidebar_counter, render_footer_counter
+    from modules.counter_module import (
+        render_sidebar_counter,
+        render_studio_navigation_bar,
+        render_unified_studio_footer
+    )
     render_sidebar_counter("xps_studio")
 
 # ==============================================================================
-# MAIN PAGE HEADER
+# MAIN PAGE HEADER & UNIFIED ECOSYSTEM NAVIGATION
 # ==============================================================================
-try:
-    st.page_link("app.py", label="← Return to Materials Characterization Master Gateway", icon="🏠")
-except Exception:
-    st.markdown('<a href="https://delerla-plotting-chemistry-app-gu8u0i.streamlit.app/" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding: 7px 16px; margin-bottom: 12px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #38bdf8 !important; border: 1px solid #334155; border-radius: 6px; text-decoration: none !important; font-weight: 600; font-size: 0.88rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🏠 ⟵ Return to Master Materials Characterization Gateway</a>', unsafe_allow_html=True)
+render_studio_navigation_bar("xps_studio")
 
 st.markdown("""
 <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.65rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
@@ -807,23 +809,10 @@ with col_main:
         plt.close(fig_xps)
 
 # ==============================================================================
-# COMMUNITY REVIEWS, USER WISHES & PEER FEEDBACK
+# UNIFIED INSTITUTIONAL FOOTER & MASTER GATEWAY REVIEW LINK
 # ==============================================================================
-from modules.feedback_module import render_community_reviews
-render_community_reviews(active_app_name="XPS Studio")
-
-# ==============================================================================
-# INSTITUTIONAL FOOTER
-# ==============================================================================
-st.markdown("""
-<div style="margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.83rem; line-height: 1.6;">
-    <strong>XPS Studio</strong> • High-Resolution Core-Level Photoelectron Spectroscopy Intelligence<br>
-    Engineered & Maintained by <strong>Dr. Deler Langenberg</strong> • 
-    <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="color: #0284c7; text-decoration: none; font-weight: 600;">GitHub Repository</a> • 
-    <a href="mailto:delerla@yahoo.de" style="color: #0284c7; text-decoration: none; font-weight: 600;">Contact: delerla@yahoo.de</a><br>
-    <small style="color: #94a3b8;">© 2026 Dr. Deler Langenberg (MIT License).</small>
-</div>
-""", unsafe_allow_html=True)
-c_f1, c_f2 = st.columns([3, 1])
-with c_f2:
-    render_footer_counter("xps_studio")
+render_unified_studio_footer(
+    active_domain_key="xps_studio",
+    studio_title="XPS Deep-Intelligence Studio",
+    studio_subtitle="High-Resolution Core-Level Photoelectron Spectroscopy Intelligence"
+)

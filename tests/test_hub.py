@@ -199,8 +199,8 @@ def test_community_feedback_and_reviews():
     from knowledge_base.saudi_research_databank import search_saudi_databank
     
     fp = get_reviews_file_path()
-    revs = load_reviews(fp)
-    assert isinstance(revs, list), "Expected reviews store to be a list"
+    original_revs = list(load_reviews(fp))
+    assert isinstance(original_revs, list), "Expected reviews store to be a list"
     
     # Test submission of a user review and subsequent retrieval
     sample_rev = {
@@ -219,9 +219,9 @@ def test_community_feedback_and_reviews():
     updated_revs = load_reviews(fp)
     assert any(r.get("id") == "rev_test" for r in updated_revs)
     
-    # Clean up test review so platform remains completely fresh for real users
-    save_all_reviews([], fp)
-    assert len(load_reviews(fp)) == 0
+    # Clean up test review and restore original state
+    save_all_reviews(original_revs, fp)
+    assert len(load_reviews(fp)) == len(original_revs)
     
     # Test databank search integration
     uio_matches = search_saudi_databank("UiO-66")

@@ -290,7 +290,11 @@ def audit_routing_and_links():
         assert "runpy.run_path" in content
     print("  --> [PASS] All 5 multi-page route files verified in pages/ directory.")
 
-    # Verify return links in all studio scripts
+    # Verify unified navigation bar, footer, counter, and centralized review policy
+    from modules.counter_module import MASTER_HUB_URL, DOMAIN_REGISTRY
+    assert MASTER_HUB_URL == "https://delerla-plotting-chemistry-app-gu8u0i.streamlit.app/"
+    assert len(DOMAIN_REGISTRY) == 6
+
     studios = [
         ROOT_DIR / "ftir_studio" / "app_ftir.py",
         ROOT_DIR / "xrd_studio" / "app_xrd.py",
@@ -298,11 +302,17 @@ def audit_routing_and_links():
         ROOT_DIR / "uv_vis_studio" / "app_uv_vis.py",
         ROOT_DIR / "sem_edx_studio" / "app_sem_edx.py",
     ]
-    master_url = "https://delerla-plotting-chemistry-app-gu8u0i.streamlit.app/"
     for s_path in studios:
         text = s_path.read_text(encoding="utf-8")
-        assert master_url in text, f"Missing master URL in {s_path.name}"
-    print("  --> [PASS] All 5 dedicated studios contain verified master gateway return links.")
+        assert "render_studio_navigation_bar" in text, f"Missing unified nav bar in {s_path.name}"
+        assert "render_sidebar_counter" in text, f"Missing sidebar counter in {s_path.name}"
+        assert "render_unified_studio_footer" in text, f"Missing unified footer in {s_path.name}"
+        assert "render_community_reviews" not in text, f"Review form should only be on Master Hub, found in {s_path.name}"
+
+    app_text = (ROOT_DIR / "app.py").read_text(encoding="utf-8")
+    assert "render_community_reviews" in app_text, "Missing centralized reviews on Master Hub (app.py)"
+    assert "render_cross_domain_traffic_panel" in app_text, "Missing cross-domain traffic panel on Master Hub (app.py)"
+    print("  --> [PASS] Unified cross-studio navigation, counters, and centralized Master Hub review architecture verified.")
 
 
 if __name__ == "__main__":

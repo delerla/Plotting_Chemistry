@@ -124,7 +124,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 🎯 Investigation Domain")
+    st.markdown("### 1. Material Domain & Preset")
     domain_names = list(UV_VIS_DOMAINS.keys())
     selected_domain = st.selectbox("Scientific Benchmark / Domain:", domain_names, index=0)
     domain_meta = UV_VIS_DOMAINS[selected_domain]
@@ -137,21 +137,22 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
+    st.markdown("### 2. Analysis Workflow")
     analysis_mode = st.radio(
-        "Analysis Workflow:",
+        "Select Analytical Engine:",
         ["1. Photodegradation Reaction Kinetics", "2. Tauc Optical Bandgap (Eg) & Urbach Tail (Eu)", "3. Multi-Component Peak Deconvolution"],
         index=0 if domain_meta.get("mode") == "kinetics" else (1 if domain_meta.get("mode") == "tauc" else 0)
     )
 
     st.markdown("---")
-    st.markdown("### 🎨 Publication Typography & Style")
-    selected_theme = st.selectbox("Journal Palette:", list(PUBLICATION_PALETTES.keys()), index=2)
+    st.markdown("### 3. Publication Typography & Style")
+    selected_theme = st.selectbox("Journal Color Palette:", list(PUBLICATION_PALETTES.keys()), index=2)
     selected_font_size = st.slider("Typography Font Size (pt):", min_value=9, max_value=18, value=12)
     fig_width = st.slider("Figure Width (in):", min_value=8.0, max_value=16.0, value=12.0, step=0.5)
     fig_height = st.slider("Figure Height (in):", min_value=4.0, max_value=8.0, value=5.5, step=0.5)
 
     st.markdown("---")
-    with st.expander("📖 Citation Attribution", expanded=False):
+    with st.expander("📖 Citation & Attribution", expanded=False):
         st.markdown("""
         **Lead Author:** Dr. Deler Langenberg  
         **Contact:** [delerla@yahoo.de](mailto:delerla@yahoo.de)  
@@ -159,17 +160,18 @@ with st.sidebar:
         """)
 
     # Real-Time Domain Visitor Counter
-    from modules.counter_module import render_sidebar_counter, render_footer_counter
+    from modules.counter_module import (
+        render_sidebar_counter,
+        render_studio_navigation_bar,
+        render_unified_studio_footer
+    )
     render_sidebar_counter("uv_vis_studio")
 
 
 # ==============================================================================
-# MAIN WORKSPACE HEADER & RETURN LINK
+# MAIN WORKSPACE HEADER & UNIFIED ECOSYSTEM NAVIGATION
 # ==============================================================================
-try:
-    st.page_link("app.py", label="← Return to Materials Characterization Master Gateway", icon="🏠")
-except Exception:
-    st.markdown('<a href="https://delerla-plotting-chemistry-app-gu8u0i.streamlit.app/" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding: 7px 16px; margin-bottom: 12px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #38bdf8 !important; border: 1px solid #334155; border-radius: 6px; text-decoration: none !important; font-weight: 600; font-size: 0.88rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🏠 ⟵ Return to Master Materials Characterization Gateway</a>', unsafe_allow_html=True)
+render_studio_navigation_bar("uv_vis_studio")
 
 st.markdown('<div class="uv-header">☀️ UV-Vis Studio: Photokinetics & Optical Bandgap Intelligence</div>', unsafe_allow_html=True)
 st.markdown(f"""
@@ -504,23 +506,10 @@ Peaks Resolved: {len(deconv_res['peaks'])}
         )
 
 # ==============================================================================
-# COMMUNITY REVIEWS, USER WISHES & PEER FEEDBACK
+# UNIFIED INSTITUTIONAL FOOTER & MASTER GATEWAY REVIEW LINK
 # ==============================================================================
-from modules.feedback_module import render_community_reviews
-render_community_reviews(active_app_name="UV-Vis Studio")
-
-# ==============================================================================
-# INSTITUTIONAL FOOTER
-# ==============================================================================
-st.markdown("""
-<div style="margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.83rem; line-height: 1.6;">
-    <strong>UV-Vis & Photokinetics Studio</strong> • Tauc Optical Bandgap, Urbach Defect Tail & Kinetic Modeling Intelligence<br>
-    Engineered & Maintained by <strong>Dr. Deler Langenberg</strong> • 
-    <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="color: #0284c7; text-decoration: none; font-weight: 600;">GitHub Repository</a> • 
-    <a href="mailto:delerla@yahoo.de" style="color: #0284c7; text-decoration: none; font-weight: 600;">Contact: delerla@yahoo.de</a><br>
-    <small style="color: #94a3b8;">© 2026 Dr. Deler Langenberg (MIT License).</small>
-</div>
-""", unsafe_allow_html=True)
-c_f1, c_f2 = st.columns([3, 1])
-with c_f2:
-    render_footer_counter("uv_vis_studio")
+render_unified_studio_footer(
+    active_domain_key="uv_vis_studio",
+    studio_title="UV-Vis & Photokinetics Studio",
+    studio_subtitle="Tauc Optical Bandgap, Urbach Defect Tail & Kinetic Modeling Intelligence"
+)
