@@ -260,8 +260,30 @@ with st.sidebar:
         else:
             st.caption("No matching benchmarks found.")
 
+    st.markdown("##### 2. Spectrum Data Source")
+    uploaded_file = st.file_uploader(
+        "Upload XPS Spectrum (CSV, XLSX, TXT, DAT, ASC, PRN):",
+        type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "asc", "prn"],
+        key="xps_file_up"
+    )
+
+    file_sig = "benchmark"
+    if uploaded_file is not None:
+        f_bytes = uploaded_file.getvalue()
+        file_sig = f"{uploaded_file.name}_{len(f_bytes)}"
+        parsed_df, _, meta = _cached_parse_file(f_bytes, uploaded_file.name)
+        if parsed_df is not None and not parsed_df.empty and parsed_df.shape[1] >= 2:
+            raw_df = parsed_df
+            st.success(f"Loaded: {uploaded_file.name} ({meta['rows']} pts)")
+        else:
+            st.error("Could not extract Binding Energy & Intensity columns. Loading domain benchmark instead.")
+            raw_df = _cached_benchmark_df(selected_preset_name)
+    else:
+        raw_df = _cached_benchmark_df(selected_preset_name)
+        st.caption(f"Reference core-level spectrum loaded for `{selected_preset_name}`")
+
     st.markdown("---")
-    st.markdown("##### 2. Publication Typography & Style")
+    st.markdown("##### 3. Publication Typography & Style")
     selected_theme = st.selectbox(
         "Journal Color Palette:",
         list(PUBLICATION_PALETTES.keys()),
@@ -291,107 +313,42 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ==============================================================================
-# DATA INGESTION
-# ==============================================================================
-col_ctrl, col_main = st.columns([1.05, 2.35])
-
-with col_ctrl:
-    st.subheader("1. Data Source")
-    data_source = st.radio(
-        "Input Source:",
-        ["Load Domain Benchmark", "Upload Experimental Data (ASCII/CSV/Excel)"],
-        key="xps_src"
-    )
-
-    file_sig = "benchmark"
-    if data_source == "Load Domain Benchmark":
-        raw_df = _cached_benchmark_df(selected_preset_name)
-        st.success(f"Loaded: **{selected_preset_name}**")
-    else:
-        uploaded_file = st.file_uploader(
-            "Upload XPS Spectrum (CSV, XLSX, TXT, DAT):",
-            type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "asc", "prn"],
-            key="xps_file_up"
-        )
-        if uploaded_file is not None:
-            f_bytes = uploaded_file.getvalue()
-            file_sig = f"{uploaded_file.name}_{len(f_bytes)}"
-            parsed_df, _, meta = _cached_parse_file(f_bytes, uploaded_file.name)
-            if parsed_df is not None and not parsed_df.empty:
-                raw_df = parsed_df
-                st.success(f"Loaded {meta['rows']} pts (`{uploaded_file.name}`)")
-            else:
-                st.error("Parsing failed. Showing benchmark.")
-                raw_df = _cached_benchmark_df(selected_preset_name)
-        else:
-            st.info("Awaiting upload. Showing benchmark.")
-            raw_df = _cached_benchmark_df(selected_preset_name)
-
-    clean_df = sanitize_spectral_dataframe(raw_df)
-    if clean_df.shape[1] > 2:
+clean_df = sanitize_spectral_dataframe(raw_df)
+if clean_df.shape[1] > 2:
+    c_sel1, c_sel2 = st.columns(2)
+    with c_sel1:
         be_col = st.selectbox("Binding Energy Column (X):", clean_df.columns, index=0)
+    with c_sel2:
         cps_col = st.selectbox("Intensity / Counts Column (Y):", [c for c in clean_df.columns if c != be_col], index=0)
-        df_xps = clean_df[[be_col, cps_col]]
-    else:
-        df_xps = clean_df
+    df_xps = clean_df[[be_col, cps_col]]
+else:
+    df_xps = clean_df
 
-    x_full = df_xps.iloc[:, 0].to_numpy().astype(float)
-    y_full = df_xps.iloc[:, 1].to_numpy().astype(float)
-    be_scan_min = float(np.nanmin(x_full))
-    be_scan_max = float(np.nanmax(x_full))
-
-    # --------------------------------------------------------------------------
-    # FORM 1: PHYSICS, CALIBRATION, ROI & BASELINE SETTINGS
-    # --------------------------------------------------------------------------
-    with st.form("physics_calibration_form"):
-        st.subheader("2. Calibration & Physics")
-        calib_mode = st.selectbox("Calibration Standard:", list(CALIBRATION_STANDARDS.keys()), index=0)
-        manual_offset = st.number_input("Manual ΔE Shift (eV):", value=0.00, step=0.05, format="%.2f")
-
-        roi_range = st.slider(
-            "Fit Energy Window ROI (eV):",
-            min_value=round(be_scan_min - 5.0, 1),
-            max_value=round(be_scan_max + 5.0, 1),
-            value=(round(be_scan_min, 1), round(be_scan_max, 1)),
-            step=0.1,
-            help="Trim noisy tails before background subtraction."
-        )
-
-        baseline_method = st.selectbox(
-            "Inelastic Background:",
-            ["Shirley (Iterative)", "Linear", "Constant (Min)", "None (Zero)"],
-            index=0
-        )
-
-        line_shape_model = st.selectbox(
-            "Peak Profile Model:",
-            ["Voigt", "Pseudo-Voigt (GL)", "Gaussian", "Lorentzian"],
-            index=0
-        )
-        gl_pct = st.slider("Pseudo-Voigt GL(%) Mix:", min_value=0, max_value=100, value=30, step=5)
-
-        c_fw1, c_fw2 = st.columns(2)
-        with c_fw1:
-            fwhm_min = st.number_input("Min FWHM (eV):", min_value=0.1, max_value=2.0, value=0.40, step=0.05)
-        with c_fw2:
-            fwhm_max = st.number_input("Max FWHM (eV):", min_value=0.5, max_value=8.0, value=3.00, step=0.10)
-
-        lock_fwhm_equal = st.checkbox("Constrain Equal FWHM Across Peaks", value=False)
-        use_doublet_coupling = st.checkbox(
-            "Couple Spin-Orbit Doublets",
-            value=bool(active_preset.get('is_doublet', False)),
-            disabled=not bool(active_preset.get('is_doublet', False))
-        )
-        n_fev = st.slider("Max Iterations:", min_value=1000, max_value=8000, value=3000, step=500)
-
-        apply_physics_btn = st.form_submit_button("⚡ Apply Physics & Run Fit", type="primary", use_container_width=True)
-
+x_full = df_xps.iloc[:, 0].to_numpy().astype(float)
+y_full = df_xps.iloc[:, 1].to_numpy().astype(float)
+be_scan_min = float(np.nanmin(x_full))
+be_scan_max = float(np.nanmax(x_full))
 
 # ==============================================================================
-# PEAK STATE & TYPOGRAPHY DEFAULTS INITIALIZATION
+# PEAK STATE, PHYSICS & TYPOGRAPHY DEFAULTS INITIALIZATION
 # ==============================================================================
 preset_sig = f"{selected_preset_name}__{file_sig}"
+
+if "xps_physics_cfg" not in st.session_state or st.session_state.get("xps_phys_preset_sig") != preset_sig:
+    st.session_state["xps_phys_preset_sig"] = preset_sig
+    st.session_state["xps_physics_cfg"] = {
+        "calib_mode": list(CALIBRATION_STANDARDS.keys())[0],
+        "manual_offset": 0.00,
+        "roi_range": (round(be_scan_min, 1), round(be_scan_max, 1)),
+        "baseline_method": "Shirley (Iterative)",
+        "line_shape_model": "Voigt",
+        "gl_pct": 30,
+        "fwhm_min": 0.40,
+        "fwhm_max": 3.00,
+        "lock_fwhm_equal": False,
+        "use_doublet_coupling": bool(active_preset.get('is_doublet', False)),
+        "n_fev": 3000,
+    }
 
 if st.session_state.get("active_preset_tracker") != selected_preset_name:
     st.session_state["active_preset_tracker"] = selected_preset_name
@@ -438,19 +395,87 @@ if st.session_state.get("active_preset_tracker") != selected_preset_name:
         'show_yticks': True,
         'show_grid': False,
         'raw_style': "Open Circles",
-        'fig_width': 8.5,
-        'fig_height': 7.5,
+        'fig_width': 9.2,
+        'fig_height': 6.4,
     }
 
+tab_deconv, tab_databank = st.tabs([
+    "🔬 High-Res Core-Level Deconvolution & Defect Analysis",
+    "📚 Cross-Institutional Reference & Literature Databank"
+])
 
-# ==============================================================================
-# RIGHT WORKSPACE: PEAK TABLE, APPLY BUTTONS, VISUALIZATION & EXPORTS
-# ==============================================================================
-with col_main:
+with tab_deconv:
     # --------------------------------------------------------------------------
-    # 3. PEAK CONFIGURATION SECTION WITH EXPLICIT APPLY BUTTON
+    # 1. PHYSICS, CALIBRATION, ROI & BASELINE SETTINGS (EXPANDABLE FORM)
     # --------------------------------------------------------------------------
-    with st.expander("⛰️ Peak Setup (Number of Peaks, Centers, Constraints & Labels)", expanded=False):
+    with st.expander("⚙️ Physics, Charge Calibration, ROI & Baseline Stripping (Click Apply)", expanded=False):
+        with st.form("physics_calibration_form"):
+            p_cur = st.session_state["xps_physics_cfg"]
+            pc1, pc2, pc3 = st.columns(3)
+            with pc1:
+                calib_keys = list(CALIBRATION_STANDARDS.keys())
+                calib_mode = st.selectbox("Calibration Standard:", calib_keys, index=calib_keys.index(p_cur["calib_mode"]) if p_cur["calib_mode"] in calib_keys else 0)
+                manual_offset = st.number_input("Manual ΔE Shift (eV):", value=float(p_cur["manual_offset"]), step=0.05, format="%.2f")
+                roi_range = st.slider(
+                    "Fit Energy Window ROI (eV):",
+                    min_value=round(be_scan_min - 5.0, 1),
+                    max_value=round(be_scan_max + 5.0, 1),
+                    value=p_cur["roi_range"],
+                    step=0.1,
+                )
+            with pc2:
+                bg_opts = ["Shirley (Iterative)", "Linear", "Constant (Min)", "None (Zero)"]
+                baseline_method = st.selectbox("Inelastic Background:", bg_opts, index=bg_opts.index(p_cur["baseline_method"]) if p_cur["baseline_method"] in bg_opts else 0)
+                ls_opts = ["Voigt", "Pseudo-Voigt (GL)", "Gaussian", "Lorentzian"]
+                line_shape_model = st.selectbox("Peak Profile Model:", ls_opts, index=ls_opts.index(p_cur["line_shape_model"]) if p_cur["line_shape_model"] in ls_opts else 0)
+                gl_pct = st.slider("Pseudo-Voigt GL(%) Mix:", min_value=0, max_value=100, value=int(p_cur["gl_pct"]), step=5)
+            with pc3:
+                c_fw1, c_fw2 = st.columns(2)
+                with c_fw1:
+                    fwhm_min = st.number_input("Min FWHM (eV):", min_value=0.1, max_value=2.0, value=float(p_cur["fwhm_min"]), step=0.05)
+                with c_fw2:
+                    fwhm_max = st.number_input("Max FWHM (eV):", min_value=0.5, max_value=8.0, value=float(p_cur["fwhm_max"]), step=0.10)
+                n_fev = st.slider("Max Iterations:", min_value=1000, max_value=8000, value=int(p_cur["n_fev"]), step=500)
+                lock_fwhm_equal = st.checkbox("Constrain Equal FWHM Across Peaks", value=bool(p_cur["lock_fwhm_equal"]))
+                use_doublet_coupling = st.checkbox(
+                    "Couple Spin-Orbit Doublets",
+                    value=bool(p_cur["use_doublet_coupling"]),
+                    disabled=not bool(active_preset.get('is_doublet', False))
+                )
+
+            apply_physics_btn = st.form_submit_button("⚡ Apply Physics, Baseline & Run Fit", type="primary", use_container_width=True)
+            if apply_physics_btn:
+                st.session_state["xps_physics_cfg"].update({
+                    "calib_mode": calib_mode,
+                    "manual_offset": manual_offset,
+                    "roi_range": roi_range,
+                    "baseline_method": baseline_method,
+                    "line_shape_model": line_shape_model,
+                    "gl_pct": gl_pct,
+                    "fwhm_min": fwhm_min,
+                    "fwhm_max": fwhm_max,
+                    "lock_fwhm_equal": lock_fwhm_equal,
+                    "use_doublet_coupling": use_doublet_coupling,
+                    "n_fev": n_fev,
+                })
+
+    p_active = st.session_state["xps_physics_cfg"]
+    calib_mode = p_active["calib_mode"]
+    manual_offset = p_active["manual_offset"]
+    roi_range = p_active["roi_range"]
+    baseline_method = p_active["baseline_method"]
+    line_shape_model = p_active["line_shape_model"]
+    gl_pct = p_active["gl_pct"]
+    fwhm_min = p_active["fwhm_min"]
+    fwhm_max = p_active["fwhm_max"]
+    lock_fwhm_equal = p_active["lock_fwhm_equal"]
+    use_doublet_coupling = p_active["use_doublet_coupling"]
+    n_fev = p_active["n_fev"]
+
+    # --------------------------------------------------------------------------
+    # 2. PEAK CONFIGURATION SECTION WITH EXPLICIT APPLY BUTTON
+    # --------------------------------------------------------------------------
+    with st.expander("⛰️ Peak Configuration & Fitting Table (Add / Edit / Lock BE)", expanded=False):
         pk_c1, pk_c2, pk_c3 = st.columns([1.1, 1.1, 1.8])
         with pk_c1:
             num_peaks = st.number_input(
@@ -511,9 +536,9 @@ with col_main:
         apply_peaks_btn = st.button("🚀 Apply Peak Setup & Run Fit", type="primary", use_container_width=True)
 
     # --------------------------------------------------------------------------
-    # 4. TYPOGRAPHY & STYLE STUDIO (FORM WITH APPLY BUTTON -> ZERO LAG TYPING)
+    # 3. TYPOGRAPHY & STYLE STUDIO (FORM WITH APPLY BUTTON -> ZERO LAG TYPING)
     # --------------------------------------------------------------------------
-    with st.expander("🎨 Publication Figure Studio (Editable Texts, Legend & Annotations)", expanded=False):
+    with st.expander("🎨 Editable Typography, Axis Labels, Legend & Publication Style (Click Apply)", expanded=False):
         with st.form("typography_style_form"):
             cur_cfg = st.session_state["xps_style_cfg"]
             t_txt, t_leg, t_ann, t_lay = st.tabs([
@@ -841,11 +866,15 @@ with col_main:
 
         plt.close(fig_xps)
 
+with tab_databank:
+    from modules.saudi_search_ui import render_saudi_alliance_explorer
+    render_saudi_alliance_explorer(active_technique="XPS")
+
 # ==============================================================================
 # UNIFIED INSTITUTIONAL FOOTER & MASTER GATEWAY REVIEW LINK
 # ==============================================================================
 render_unified_studio_footer(
     active_domain_key="xps_studio",
-    studio_title="XPS Deep-Intelligence Studio",
+    studio_title="XPS Core-Level Studio",
     studio_subtitle="High-Resolution Core-Level Photoelectron Spectroscopy Intelligence"
 )

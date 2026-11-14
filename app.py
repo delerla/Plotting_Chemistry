@@ -187,7 +187,7 @@ STUDIO_URLS = {
     "SEM-EDX": {
         "name": "SEM-EDX Microstructural Studio",
         "tag": "Electron Microscopy & EDX",
-        "url": "https://delerla-sem-edx-studio.streamlit.app/",
+        "url": "https://delerla-sem-edx-studi.streamlit.app/",
         "local_page": "pages/5_SEM_EDX_Studio.py",
         "local_port": 8506,
         "class": "Nanoparticles · Polycrystalline Grains · Electrospun Fibers",

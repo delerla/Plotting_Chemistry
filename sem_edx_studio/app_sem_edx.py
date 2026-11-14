@@ -132,6 +132,25 @@ st.markdown("""
         padding: 10px 12px;
         margin-bottom: 1rem;
     }
+    .insight-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #0284c7;
+        padding: 11px 15px;
+        border-radius: 6px;
+        margin-top: 8px;
+        margin-bottom: 8px;
+    }
+    .warning-box {
+        background: #fffbeb;
+        border: 1px solid #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 9px 13px;
+        border-radius: 6px;
+        color: #92400e;
+        margin-top: 8px;
+        font-size: 0.88rem;
+    }
     .badge {
         display: inline-block;
         padding: 3px 8px;
@@ -150,7 +169,7 @@ st.markdown("""
 
 
 # ==============================================================================
-# SIDEBAR
+# SIDEBAR: DOMAIN, DATA SOURCES & STYLE
 # ==============================================================================
 with st.sidebar:
     st.markdown("""
@@ -199,19 +218,42 @@ with st.sidebar:
         except Exception:
             st.caption("Reference databank available on Master Hub.")
 
-    st.markdown("##### 2. Analytical Workflow")
-    analysis_mode = st.radio(
-        "Select Analytical Protocol:",
-        ["1. SEM Micrograph Segmentation & Sizing", "2. Particle Size Statistical Distribution", "3. EDX Elemental Microanalysis & Stoichiometry"],
-        index=0
+    st.markdown("##### 2. Micrograph & EDX Data Sources")
+    up_img = st.file_uploader(
+        "Upload SEM Micrograph (PNG, JPG, TIFF):",
+        type=["png", "jpg", "jpeg", "tif", "tiff"],
+        key="sem_img_uploader"
     )
+    if up_img is not None:
+        file_bytes = np.asarray(bytearray(up_img.read()), dtype=np.uint8)
+        sem_img = cv2.imdecode(file_bytes, cv2.IMREAD_GRAYSCALE)
+        st.success(f"Loaded Micrograph: {up_img.name} ({sem_img.shape[1]}×{sem_img.shape[0]} px)")
+    else:
+        if "Perovskite" in selected_domain:
+            sem_img = generate_perovskite_grains_micrograph()
+        else:
+            sem_img = generate_uio66_micrograph()
+        st.caption(f"Reference micrograph loaded ({sem_img.shape[1]}×{sem_img.shape[0]} px)")
+
+    up_edx = st.file_uploader(
+        "Upload EDX Spectrum (CSV, DAT, TXT, Excel):",
+        type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "asc", "dpt"],
+        key="sem_edx_uploader"
+    )
+    if up_edx is not None:
+        raw_b = up_edx.getvalue()
+        df_edx, _ = load_smart_file(raw_b, up_edx.name)
+        st.success(f"Loaded EDX: {up_edx.name} ({df_edx.shape[0]} channels)")
+    else:
+        if "Perovskite" in selected_domain:
+            df_edx = generate_mapbi3_edx_spectrum()
+        else:
+            df_edx = generate_uio66_edx_spectrum()
+        st.caption(f"Reference EDX spectrum loaded ({df_edx.shape[0]} channels)")
 
     st.markdown("---")
     st.markdown("##### 3. Publication Typography & Style")
     selected_theme = st.selectbox("Journal Color Palette:", list(PUBLICATION_PALETTES.keys()), index=2)
-    selected_font_size = st.slider("Typography Font Size (pt):", min_value=9, max_value=18, value=12)
-    fig_width = st.slider("Figure Width (in):", min_value=8.0, max_value=16.0, value=12.0, step=0.5)
-    fig_height = st.slider("Figure Height (in):", min_value=4.0, max_value=8.0, value=5.5, step=0.5)
 
     # Real-Time Domain Visitor Counter
     render_sidebar_counter("sem_edx_studio")
@@ -237,289 +279,239 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# Top-Level Analytical Workflow Tabs (Standardized with XRD, FTIR, XPS)
+tab_seg, tab_dist, tab_edx = st.tabs([
+    "🔬 SEM Micrograph Segmentation & Particle Sizing",
+    "📊 Particle Size Statistical Distribution (Log-Normal & Weibull)",
+    "⚡ EDX Elemental Microanalysis & Stoichiometry"
+])
 
-# ==============================================================================
-# DATA INGESTION & CONTROLS
-# ==============================================================================
-col_ctrl, col_view = st.columns([1, 2.6])
-
-with col_ctrl:
-    st.subheader("Data & Parameters")
-    
-    if analysis_mode.startswith("1") or analysis_mode.startswith("2"):
-        data_source = st.radio("Micrograph Source:", ["Curated Benchmark Micrograph", "Upload Image (PNG, JPG, TIFF)"], key="sem_src")
-        
-        if data_source == "Curated Benchmark Micrograph":
-            if "Perovskite" in selected_domain:
-                sem_img = generate_perovskite_grains_micrograph()
-            else:
-                sem_img = generate_uio66_micrograph()
-            st.success(f"Ingested benchmark image: {sem_img.shape[1]}x{sem_img.shape[0]} px.")
-        else:
-            up_img = st.file_uploader("Upload SEM Micrograph", type=["png", "jpg", "jpeg", "tif", "tiff"])
-            if up_img is not None:
-                file_bytes = np.asarray(bytearray(up_img.read()), dtype=np.uint8)
-                sem_img = cv2.imdecode(file_bytes, cv2.IMREAD_GRAYSCALE)
-                st.success(f"Loaded {up_img.name}: {sem_img.shape[1]}x{sem_img.shape[0]} px.")
-            else:
-                sem_img = generate_uio66_micrograph()
-                st.info("No file uploaded yet. Showing default benchmark image.")
-
-        st.markdown("#### 📏 Spatial Calibration")
+# Shared Segmentation & Typography Controls
+with st.expander("⚙️ Spatial Calibration, Thresholding, EDX Sensitivity & Figure Style", expanded=False):
+    c_cfg1, c_cfg2, c_cfg3 = st.columns(3)
+    with c_cfg1:
         scale_val = st.number_input("Spatial Scale (nm per pixel):", min_value=0.01, max_value=500.0, value=12.5, step=0.5)
         seg_method = st.selectbox("Segmentation Algorithm:", ["Otsu", "Adaptive"], index=0)
         use_watershed = st.checkbox("Apply Distance Watershed Separation", value=True)
-        min_px = st.slider("Min Particle Size (px):", min_value=5, max_value=200, value=25)
+    with c_cfg2:
+        min_px = st.slider("Min Particle Area Filter (px):", min_value=5, max_value=200, value=25)
+        edx_prom = st.slider("EDX Peak Prominence (Counts):", min_value=20.0, max_value=500.0, value=75.0, step=5.0)
+    with c_cfg3:
+        selected_font_size = st.slider("Typography Font Size (pt):", min_value=9, max_value=18, value=12)
+        fig_width = st.slider("Figure Width (in):", min_value=8.0, max_value=16.0, value=11.0, step=0.5)
+        fig_height = st.slider("Figure Height (in):", min_value=4.0, max_value=8.0, value=5.2, step=0.5)
 
-    else:
-        edx_source = st.radio("EDX Data Source:", ["Curated Benchmark Spectrum", "Upload File (CSV, DAT, TXT, Excel)"], key="edx_src")
-        if edx_source == "Curated Benchmark Spectrum":
-            if "Perovskite" in selected_domain:
-                df_edx = generate_mapbi3_edx_spectrum()
-            else:
-                df_edx = generate_uio66_edx_spectrum()
-            st.success(f"Ingested benchmark EDX spectrum: {df_edx.shape[0]} energy channels.")
-        else:
-            up_edx = st.file_uploader("Upload EDX Spectrum", type=["csv", "xlsx", "xls", "txt", "dat", "tsv", "asc", "dpt"])
-            if up_edx is not None:
-                raw_b = up_edx.getvalue()
-                df_edx, _ = load_smart_file(raw_b, up_edx.name)
-                st.success(f"Parsed {up_edx.name}: {df_edx.shape[0]} channels.")
-            else:
-                df_edx = generate_uio66_edx_spectrum()
-                st.info("No file uploaded. Showing default benchmark EDX.")
+seg_res = segment_micrograph(
+    image=sem_img,
+    scale_nm_per_px=scale_val,
+    method=seg_method,
+    min_area_px=min_px,
+    apply_watershed=use_watershed
+)
+df_particles = seg_res["df_particles"]
 
-        st.markdown("#### ⚡ Peak Sensitivity")
-        edx_prom = st.slider("Peak Prominence (Counts):", min_value=20.0, max_value=500.0, value=75.0, step=5.0)
+# ==============================================================================
+# TAB 1: SEM MICROGRAPH SEGMENTATION & PARTICLE SIZING
+# ==============================================================================
+with tab_seg:
+    fig_seg, _ = render_micrograph_overlay_plot(
+        raw_img=sem_img,
+        overlay_rgb=seg_res["overlay_rgb"],
+        scale_nm_per_px=scale_val,
+        font_size=selected_font_size,
+        fig_size=(fig_width, fig_height)
+    )
+    st.pyplot(fig_seg)
 
-    st.markdown("---")
+    s_col1, s_col2, s_col3, s_col4 = st.columns(4)
+    s_col1.metric("Particles Segmented", seg_res["n_particles"])
+    if not df_particles.empty:
+        mean_d = df_particles["Diameter_nm"].mean()
+        mean_asp = df_particles["Aspect_Ratio"].mean()
+        mean_sph = df_particles["Sphericity"].mean()
+        s_col2.metric("Mean Equivalent Diameter", f"{mean_d:.1f} nm")
+        s_col3.metric("Mean Aspect Ratio", f"{mean_asp:.2f}")
+        s_col4.metric("Mean Sphericity", f"{mean_sph:.2f}")
+
+        st.markdown(f"""
+        <div class="insight-card">
+            <strong>✓ Morphological Diagnostic:</strong> Segmented <b>{seg_res['n_particles']}</b> discrete grains/crystallites at a spatial calibration of <code>{scale_val:.2f} nm/px</code> using {seg_method} thresholding{' with Euclidean distance-watershed separation' if use_watershed else ''}. Mean equivalent diameter = <b>{mean_d:.1f} nm</b> (aspect ratio = {mean_asp:.2f}, sphericity = {mean_sph:.2f}).
+        </div>
+        """, unsafe_allow_html=True)
+
+        with st.expander("📊 Tabulated Morphological Particle Metrics", expanded=True):
+            st.dataframe(df_particles, use_container_width=True)
+
+    st.markdown("#### 📥 Publication Export Center")
+    clean_slug = selected_domain.split("(")[0].strip().replace(" ", "_").replace("/", "_")
+    zip_seg = build_analysis_bundle_zip(
+        fig=fig_seg,
+        base_name=f"SEM_Segmentation_{clean_slug}",
+        labplot_df=df_particles,
+        summary_data={"domain": selected_domain, "particles": seg_res["n_particles"]},
+        title=f"SEM Segmentation: {selected_domain}"
+    )
+    st.download_button(
+        "📦 Download Complete SEM Segmentation Package (.ZIP: OriginLab, LabPlot, PNG, SVG, PDF)",
+        data=zip_seg,
+        file_name=f"SEM_{clean_slug}_Segmentation_Package.zip",
+        mime="application/zip",
+        type="primary",
+        use_container_width=True,
+        key="dl_sem_seg_zip"
+    )
+    c_l1, c_r1 = st.columns(2)
+    with c_l1:
+        st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
+        st.download_button("📊 Export OriginLab Matrix (.dat)", data=get_originlab_ascii_bytes(df_particles, title="SEM Particle Sizing Matrix"), file_name=f"SEM_{clean_slug}_OriginLab.dat", mime="text/plain", use_container_width=True, key="sem_seg_dat")
+        st.download_button("📗 Export OriginLab Workbook (.xlsx)", data=get_originlab_excel_bytes(df_particles, title="SEM Particle Sizing Matrix"), file_name=f"SEM_{clean_slug}_OriginLab.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key="sem_seg_xlsx")
+        st.download_button("📈 Export LabPlot Matrix (.dat)", data=get_labplot_ascii_bytes(df_particles, title="SEM Particle Sizing Matrix"), file_name=f"SEM_{clean_slug}_LabPlot.dat", mime="text/plain", use_container_width=True, key="sem_seg_lab")
+    with c_r1:
+        st.markdown("**🖼️ Publication Graphics:**")
+        st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_seg, "png", dpi=600), file_name=f"SEM_{clean_slug}_600DPI.png", mime="image/png", use_container_width=True, key="sem_seg_png")
+        st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_seg, "svg"), file_name=f"SEM_{clean_slug}.svg", mime="image/svg+xml", use_container_width=True, key="sem_seg_svg")
+        st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_seg, "pdf"), file_name=f"SEM_{clean_slug}.pdf", mime="application/pdf", use_container_width=True, key="sem_seg_pdf")
+    plt.close(fig_seg)
 
 
 # ==============================================================================
-# WORKFLOW EXECUTION
+# TAB 2: PARTICLE SIZE STATISTICAL DISTRIBUTION
 # ==============================================================================
-with col_view:
-    # -------------------------------------------------------------
-    # WORKFLOW 1: MICROGRAPH SEGMENTATION OVERLAY
-    # -------------------------------------------------------------
-    if analysis_mode.startswith("1"):
-        seg_res = segment_micrograph(
-            image=sem_img,
-            scale_nm_per_px=scale_val,
-            method=seg_method,
-            min_area_px=min_px,
-            apply_watershed=use_watershed
-        )
+with tab_dist:
+    if not df_particles.empty:
+        d_vals = df_particles["Diameter_nm"].to_numpy()
+        dist_stats = fit_size_distributions(d_vals)
 
-        fig, _ = render_micrograph_overlay_plot(
-            raw_img=sem_img,
-            overlay_rgb=seg_res["overlay_rgb"],
-            scale_nm_per_px=scale_val,
-            font_size=selected_font_size,
-            fig_size=(fig_width, fig_height)
-        )
-        st.pyplot(fig)
-
-        df_particles = seg_res["df_particles"]
-        s_col1, s_col2, s_col3, s_col4 = st.columns(4)
-        s_col1.metric("Particles Detected", seg_res["n_particles"])
-        if not df_particles.empty:
-            mean_d = df_particles["Diameter_nm"].mean()
-            mean_asp = df_particles["Aspect_Ratio"].mean()
-            mean_sph = df_particles["Sphericity"].mean()
-            s_col2.metric("Mean Diameter", f"{mean_d:.1f} nm")
-            s_col3.metric("Mean Aspect Ratio", f"{mean_asp:.2f}")
-            s_col4.metric("Mean Sphericity", f"{mean_sph:.2f}")
-
-            with st.expander("📋 Morphological Particle Metrics Table", expanded=False):
-                st.dataframe(df_particles, use_container_width=True)
-
-        active_export_df = df_particles
-        active_summary = f"""# SEM Micrograph Morphological Particle Sizing Report
-Benchmark Domain: {selected_domain}
-Material Class: {domain_meta['material_class']}
-Particles Counted: {seg_res['n_particles']}
-Spatial Scale: {scale_val:.2f} nm/px
-Mean Diameter: {df_particles['Diameter_nm'].mean():.2f} nm
-"""
-
-    # -------------------------------------------------------------
-    # WORKFLOW 2: PARTICLE SIZE DISTRIBUTION
-    # -------------------------------------------------------------
-    elif analysis_mode.startswith("2"):
-        seg_res = segment_micrograph(
-            image=sem_img,
-            scale_nm_per_px=scale_val,
-            method=seg_method,
-            min_area_px=min_px,
-            apply_watershed=use_watershed
-        )
-        df_particles = seg_res["df_particles"]
-
-        if not df_particles.empty:
-            d_vals = df_particles["Diameter_nm"].to_numpy()
-            dist_stats = fit_size_distributions(d_vals)
-
-            fig, _ = render_size_distribution_plot(
-                diameters_nm=d_vals,
-                dist_stats=dist_stats,
-                theme=selected_theme,
-                font_size=selected_font_size,
-                fig_size=(fig_width * 0.75, fig_height)
-            )
-            st.pyplot(fig)
-
-            d_col1, d_col2, d_col3, d_col4 = st.columns(4)
-            d_col1.metric("Median d50", f"{dist_stats['d50_nm']:.1f} nm", f"Span: {dist_stats['d10_nm']:.0f} - {dist_stats['d90_nm']:.0f} nm")
-            d_col2.metric("Mean Diameter", f"{dist_stats['mean_nm']:.1f} ± {dist_stats['std_nm']:.1f} nm")
-            d_col3.metric("Polydispersity (PDI)", f"{dist_stats['pdi']:.3f}", "Narrow" if dist_stats['pdi'] < 0.3 else "Polydisperse")
-            lit_d = domain_meta.get("expected_diameter_nm", np.nan)
-            d_col4.metric("Benchmark Target", f"{lit_d:.0f} nm" if not np.isnan(lit_d) else "N/A")
-
-            # Tabulate distribution summary
-            summary_df = pd.DataFrame([{
-                "Count": dist_stats["count"],
-                "Mean_nm": dist_stats["mean_nm"],
-                "Std_nm": dist_stats["std_nm"],
-                "Median_d50_nm": dist_stats["d50_nm"],
-                "d10_nm": dist_stats["d10_nm"],
-                "d90_nm": dist_stats["d90_nm"],
-                "PDI": dist_stats["pdi"],
-                "Geo_Mean_nm": dist_stats["lognormal"].get("geometric_mean_nm", np.nan),
-                "Geo_Std": dist_stats["lognormal"].get("geometric_std", np.nan)
-            }])
-
-            with st.expander("📋 Particle Size Statistical Summary", expanded=False):
-                st.dataframe(summary_df, use_container_width=True)
-
-            active_export_df = df_particles
-            active_summary = f"""# Particle Size Distribution Report
-Benchmark Domain: {selected_domain}
-Total Particles: {dist_stats['count']}
-Mean Diameter: {dist_stats['mean_nm']:.1f} ± {dist_stats['std_nm']:.1f} nm
-Median d50: {dist_stats['d50_nm']:.1f} nm
-Polydispersity Index (PDI): {dist_stats['pdi']:.3f}
-"""
-        else:
-            st.warning("No particles segmented. Adjust thresholding or size filter.")
-            fig, ax = plt.subplots()
-            active_export_df = pd.DataFrame()
-            active_summary = "No particles found."
-
-    # -------------------------------------------------------------
-    # WORKFLOW 3: EDX ELEMENTAL MICROANALYSIS
-    # -------------------------------------------------------------
-    else:
-        edx_res = analyze_edx_spectrum(
-            df_edx=df_edx,
-            peak_prominence=edx_prom
-        )
-
-        fig, _ = render_edx_publication_plot(
-            edx_results=edx_res,
+        fig_dist, _ = render_size_distribution_plot(
+            diameters_nm=d_vals,
+            dist_stats=dist_stats,
             theme=selected_theme,
             font_size=selected_font_size,
             fig_size=(fig_width, fig_height)
         )
-        st.pyplot(fig)
+        st.pyplot(fig_dist)
 
-        df_quant = edx_res["df_quant"]
-        stoich = edx_res["stoichiometry"]
+        d_col1, d_col2, d_col3, d_col4 = st.columns(4)
+        d_col1.metric("Median Diameter (d50)", f"{dist_stats['d50_nm']:.1f} nm", f"d10–d90: {dist_stats['d10_nm']:.0f}–{dist_stats['d90_nm']:.0f} nm")
+        d_col2.metric("Mean ± Std Dev", f"{dist_stats['mean_nm']:.1f} ± {dist_stats['std_nm']:.1f} nm")
+        d_col3.metric("Polydispersity (PDI)", f"{dist_stats['pdi']:.3f}", "Monodisperse" if dist_stats['pdi'] < 0.1 else ("Narrow" if dist_stats['pdi'] < 0.3 else "Polydisperse"))
+        lit_d = domain_meta.get("expected_diameter_nm", np.nan)
+        d_col4.metric("Reference Benchmark", f"{lit_d:.0f} nm" if not np.isnan(lit_d) else "N/A")
 
-        if not df_quant.empty:
-            e_cols = st.columns(min(len(df_quant), 4))
-            for i, row in df_quant.iterrows():
-                if i < len(e_cols):
-                    e_cols[i].metric(f"{row['Element']} Content", f"{row['Atomic_pct']:.1f} at%", f"{row['Weight_pct']:.1f} wt%")
+        summary_df = pd.DataFrame([{
+            "Count": dist_stats["count"],
+            "Mean_nm": dist_stats["mean_nm"],
+            "Std_nm": dist_stats["std_nm"],
+            "Median_d50_nm": dist_stats["d50_nm"],
+            "d10_nm": dist_stats["d10_nm"],
+            "d90_nm": dist_stats["d90_nm"],
+            "PDI": dist_stats["pdi"],
+            "Geo_Mean_nm": dist_stats["lognormal"].get("geometric_mean_nm", np.nan),
+            "Geo_Std": dist_stats["lognormal"].get("geometric_std", np.nan)
+        }])
 
-            if stoich:
-                st.markdown("##### 🔬 Stoichiometric Verification")
-                for k, v in stoich.items():
-                    st.info(f"**Quantified Atomic Ratio {k}:** `{v}`")
+        with st.expander("📊 Particle Size Distribution Statistical Summary", expanded=True):
+            st.dataframe(summary_df, use_container_width=True)
 
-            with st.expander("📋 Quantified Elemental Composition Table", expanded=False):
-                st.dataframe(df_quant, use_container_width=True)
-
-            active_export_df = df_quant
-            active_summary = f"""# EDX Elemental Microanalysis Report
-Benchmark Domain: {selected_domain}
-Material Class: {domain_meta['material_class']}
-Identified Elements: {', '.join(df_quant['Element'].tolist())}
-Stoichiometry: {stoich}
-"""
-        else:
-            st.warning("No elemental peaks matched above threshold.")
-            active_export_df = pd.DataFrame()
-            active_summary = "No peaks resolved."
-
-    # ==============================================================================
-    # ZERO-BARRIER EXPORT CENTER (ORIGINLAB, LABPLOT & PUBLICATION BUNDLE)
-    # ==============================================================================
-    st.markdown("---")
-    st.markdown("### 📦 Publication Export & Interoperability Center")
-    st.caption("Direct zero-barrier downloads: OriginLab ASCII matrix with 4-tier headers, Excel workbooks, LabPlot matrices, and 600 DPI publication graphics.")
-
-    exp_col1, exp_col2 = st.columns(2)
-
-    with exp_col1:
-        st.markdown("#### 📊 OriginLab & LabPlot Data Matrices")
-        
-        # OriginLab ASCII (.dat)
-        dat_bytes = get_originlab_ascii_bytes(active_export_df, title="SEM-EDX Matrix")
-        st.download_button(
-            "📊 Export OriginLab Matrix (.dat)",
-            data=dat_bytes,
-            file_name="sem_edx_originlab_matrix.dat",
-            mime="text/plain",
-            use_container_width=True
-        )
-
-        # OriginLab Excel Workbook (.xlsx)
-        xlsx_bytes = get_originlab_excel_bytes(active_export_df, title="SEM-EDX Matrix")
-        st.download_button(
-            "📗 Export OriginLab Workbook (.xlsx)",
-            data=xlsx_bytes,
-            file_name="sem_edx_originlab_workbook.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
-
-        # LabPlot ASCII (.dat)
-        labplot_bytes = get_labplot_ascii_bytes(active_export_df, title="SEM-EDX Matrix")
-        st.download_button(
-            "📉 Export LabPlot Matrix (.dat)",
-            data=labplot_bytes,
-            file_name="sem_edx_labplot_matrix.dat",
-            mime="text/plain",
-            use_container_width=True
-        )
-
-    with exp_col2:
-        st.markdown("#### 🖼️ Editorial Graphics & Complete ZIP")
-        
-        png_bytes = get_figure_bytes(fig, "png", dpi=600)
-        svg_bytes = get_figure_bytes(fig, "svg")
-        pdf_bytes = get_figure_bytes(fig, "pdf")
-
-        g_btn1, g_btn2, g_btn3 = st.columns(3)
-        g_btn1.download_button("🖼️ 600 DPI PNG", data=png_bytes, file_name="sem_edx_figure_600dpi.png", mime="image/png", use_container_width=True)
-        g_btn2.download_button("📐 Vector SVG", data=svg_bytes, file_name="sem_edx_figure.svg", mime="image/svg+xml", use_container_width=True)
-        g_btn3.download_button("📄 Vector PDF", data=pdf_bytes, file_name="sem_edx_figure.pdf", mime="application/pdf", use_container_width=True)
-
-        zip_bytes = build_analysis_bundle_zip(
-            fig=fig,
-            base_name="SEM_EDX_Analysis",
-            labplot_df=active_export_df,
-            summary_data={"domain": selected_domain, "mode": analysis_mode},
-            title=f"SEM-EDX Analysis: {selected_domain}"
+        st.markdown("#### 📥 Publication Export Center")
+        zip_dist = build_analysis_bundle_zip(
+            fig=fig_dist,
+            base_name=f"SEM_Distribution_{clean_slug}",
+            labplot_df=df_particles,
+            summary_data=summary_df,
+            title=f"Particle Size Distribution: {selected_domain}"
         )
         st.download_button(
-            "📦 Download Complete Publication Package (.ZIP)",
-            data=zip_bytes,
-            file_name="SEM_EDX_Publication_Package.zip",
+            "📦 Download Complete Size Distribution Package (.ZIP: OriginLab, LabPlot, PNG, SVG, PDF)",
+            data=zip_dist,
+            file_name=f"SEM_{clean_slug}_Distribution_Package.zip",
             mime="application/zip",
-            use_container_width=True
+            type="primary",
+            use_container_width=True,
+            key="dl_sem_dist_zip"
         )
+        c_l2, c_r2 = st.columns(2)
+        with c_l2:
+            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
+            st.download_button("📊 Export OriginLab Matrix (.dat)", data=get_originlab_ascii_bytes(df_particles, title="Particle Size Distribution Matrix"), file_name=f"SEM_Dist_{clean_slug}_OriginLab.dat", mime="text/plain", use_container_width=True, key="sem_dist_dat")
+            st.download_button("📗 Export OriginLab Workbook (.xlsx)", data=get_originlab_excel_bytes(df_particles, title="Particle Size Distribution Matrix"), file_name=f"SEM_Dist_{clean_slug}_OriginLab.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key="sem_dist_xlsx")
+            st.download_button("📈 Export LabPlot Matrix (.dat)", data=get_labplot_ascii_bytes(df_particles, title="Particle Size Distribution Matrix"), file_name=f"SEM_Dist_{clean_slug}_LabPlot.dat", mime="text/plain", use_container_width=True, key="sem_dist_lab")
+        with c_r2:
+            st.markdown("**🖼️ Publication Graphics:**")
+            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_dist, "png", dpi=600), file_name=f"SEM_Dist_{clean_slug}_600DPI.png", mime="image/png", use_container_width=True, key="sem_dist_png")
+            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_dist, "svg"), file_name=f"SEM_Dist_{clean_slug}.svg", mime="image/svg+xml", use_container_width=True, key="sem_dist_svg")
+            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_dist, "pdf"), file_name=f"SEM_Dist_{clean_slug}.pdf", mime="application/pdf", use_container_width=True, key="sem_dist_pdf")
+        plt.close(fig_dist)
+    else:
+        st.warning("No particles segmented. Adjust thresholding or minimum area filter in the configuration bar above.")
+
+
+# ==============================================================================
+# TAB 3: EDX ELEMENTAL MICROANALYSIS & STOICHIOMETRY
+# ==============================================================================
+with tab_edx:
+    edx_res = analyze_edx_spectrum(
+        df_edx=df_edx,
+        peak_prominence=edx_prom
+    )
+
+    fig_edx, _ = render_edx_publication_plot(
+        edx_results=edx_res,
+        theme=selected_theme,
+        font_size=selected_font_size,
+        fig_size=(fig_width, fig_height)
+    )
+    st.pyplot(fig_edx)
+
+    df_quant = edx_res["df_quant"]
+    stoich = edx_res["stoichiometry"]
+
+    if not df_quant.empty:
+        e_cols = st.columns(min(len(df_quant), 4))
+        for i, row in df_quant.iterrows():
+            if i < len(e_cols):
+                e_cols[i].metric(f"{row['Element']} Content", f"{row['Atomic_pct']:.1f} at%", f"{row['Weight_pct']:.1f} wt%")
+
+        if stoich:
+            st.markdown('<div class="insight-card">', unsafe_allow_html=True)
+            for k, v in stoich.items():
+                st.markdown(f"**✓ Stoichiometric Atomic Ratio ({k}):** `{v}`")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with st.expander("📊 Quantified Elemental Composition Table", expanded=True):
+            st.dataframe(df_quant, use_container_width=True)
+
+        st.markdown("#### 📥 Publication Export Center")
+        zip_edx = build_analysis_bundle_zip(
+            fig=fig_edx,
+            base_name=f"EDX_{clean_slug}",
+            labplot_df=df_quant,
+            summary_data=df_quant,
+            title=f"EDX Microanalysis: {selected_domain}"
+        )
+        st.download_button(
+            "📦 Download Complete EDX Microanalysis Package (.ZIP: OriginLab, LabPlot, PNG, SVG, PDF)",
+            data=zip_edx,
+            file_name=f"EDX_{clean_slug}_Package.zip",
+            mime="application/zip",
+            type="primary",
+            use_container_width=True,
+            key="dl_edx_zip"
+        )
+        c_l3, c_r3 = st.columns(2)
+        with c_l3:
+            st.markdown("**📊 Data Tables (OriginLab & LabPlot):**")
+            st.download_button("📊 Export OriginLab Matrix (.dat)", data=get_originlab_ascii_bytes(df_quant, title="EDX Elemental Composition Matrix"), file_name=f"EDX_{clean_slug}_OriginLab.dat", mime="text/plain", use_container_width=True, key="edx_dat")
+            st.download_button("📗 Export OriginLab Workbook (.xlsx)", data=get_originlab_excel_bytes(df_quant, title="EDX Elemental Composition Matrix"), file_name=f"EDX_{clean_slug}_OriginLab.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key="edx_xlsx")
+            st.download_button("📈 Export LabPlot Matrix (.dat)", data=get_labplot_ascii_bytes(df_quant, title="EDX Elemental Composition Matrix"), file_name=f"EDX_{clean_slug}_LabPlot.dat", mime="text/plain", use_container_width=True, key="edx_lab")
+        with c_r3:
+            st.markdown("**🖼️ Publication Graphics:**")
+            st.download_button("🖼️ Export 600 DPI PNG", data=get_figure_bytes(fig_edx, "png", dpi=600), file_name=f"EDX_{clean_slug}_600DPI.png", mime="image/png", use_container_width=True, key="edx_png")
+            st.download_button("📐 Export Vector SVG", data=get_figure_bytes(fig_edx, "svg"), file_name=f"EDX_{clean_slug}.svg", mime="image/svg+xml", use_container_width=True, key="edx_svg")
+            st.download_button("📄 Export Vector PDF", data=get_figure_bytes(fig_edx, "pdf"), file_name=f"EDX_{clean_slug}.pdf", mime="application/pdf", use_container_width=True, key="edx_pdf")
+        plt.close(fig_edx)
+    else:
+        st.warning("No characteristic X-ray lines resolved above threshold. Lower the peak prominence threshold above.")
 
 # ==============================================================================
 # UNIFIED INSTITUTIONAL FOOTER & MASTER GATEWAY REVIEW LINK

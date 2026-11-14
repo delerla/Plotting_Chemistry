@@ -56,7 +56,7 @@ DOMAIN_REGISTRY: Dict[str, Dict[str, str]] = {
     "sem_edx_studio": {
         "name": "SEM-EDX Microstructural Studio",
         "short": "SEM-EDX",
-        "url": "https://delerla-sem-edx-studio.streamlit.app/",
+        "url": "https://delerla-sem-edx-studi.streamlit.app/",
         "badge_label": "SEM-EDX",
         "color": "0284c7",
         "icon": ""
