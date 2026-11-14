@@ -32,7 +32,7 @@ def render_micrograph_overlay_plot(
 
     cmap = "gray" if raw_img.ndim == 2 else None
     ax1.imshow(raw_img, cmap=cmap)
-    ax1.set_title(r"$\mathbf{(a)\ Raw\ SEM\ Micrograph}$", fontsize=font_size + 1)
+    ax1.set_title("(a) Raw SEM Micrograph", fontsize=font_size + 1, fontweight="bold")
     ax1.axis("off")
 
     # Draw scale bar on ax1 (e.g., 500 nm or 1 µm)
@@ -49,7 +49,7 @@ def render_micrograph_overlay_plot(
     )
 
     ax2.imshow(overlay_rgb)
-    ax2.set_title(r"$\mathbf{(b)\ Segmented\ Particles\ \&\ Centroids}$", fontsize=font_size + 1)
+    ax2.set_title("(b) Segmented Particles & Centroids", fontsize=font_size + 1, fontweight="bold")
     ax2.axis("off")
 
     fig.tight_layout()
