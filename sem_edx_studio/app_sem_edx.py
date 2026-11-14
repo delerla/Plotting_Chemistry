@@ -45,6 +45,34 @@ from sem_edx_studio.modules.export_utils import (
 )
 from sem_edx_studio.modules.file_parser import load_smart_file
 
+try:
+    from sem_edx_studio.modules.counter_module import (
+        render_sidebar_counter,
+        render_studio_navigation_bar,
+        render_unified_studio_footer,
+    )
+except ImportError:
+    try:
+        from modules.counter_module import (
+            render_sidebar_counter,
+            render_studio_navigation_bar,
+            render_unified_studio_footer,
+        )
+    except ImportError:
+        try:
+            from counter_module import (
+                render_sidebar_counter,
+                render_studio_navigation_bar,
+                render_unified_studio_footer,
+            )
+        except ImportError:
+            def render_sidebar_counter(domain_key: str):
+                pass
+            def render_studio_navigation_bar(active_domain_key: str):
+                st.markdown('<a href="https://delerla-plotting-chemistry-app-gu8u0i.streamlit.app/" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding: 5px 12px; background: #38bdf8; color: #0f172a !important; border-radius: 5px; text-decoration: none !important; font-weight: 700; font-size: 0.80rem;">🏠 ⟵ Master Characterization Hub</a>', unsafe_allow_html=True)
+            def render_unified_studio_footer(active_domain_key: str, studio_title: str, studio_subtitle: str):
+                st.markdown(f'<div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.82rem;"><strong>{studio_title}</strong> • {studio_subtitle}<br/>Lead: Dr. Deler Langenberg (MIT License)</div>', unsafe_allow_html=True)
+
 # Page Configuration
 st.set_page_config(
     page_title="SEM-EDX Studio - Dr. Deler Langenberg",
@@ -155,11 +183,6 @@ with st.sidebar:
         """)
 
     # Real-Time Domain Visitor Counter
-    from modules.counter_module import (
-        render_sidebar_counter,
-        render_studio_navigation_bar,
-        render_unified_studio_footer
-    )
     render_sidebar_counter("sem_edx_studio")
 
 
