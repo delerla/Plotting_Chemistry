@@ -1,8 +1,7 @@
 """
-feedback_module.py - Academic Community Reviews, Wishes & Feedback Engine
+feedback_module.py - Academic Community Reviews, Wishes & Feature Registry
 Centralized on the Master Characterization Gateway for authentic researcher reviews,
-ratings, and feature wishlists across all characterization domains.
-Authored & Maintained by Dr. Deler Langenberg (2026)
+ratings, and feature requests across all characterization domains.
 """
 
 import json
@@ -63,8 +62,8 @@ def add_review(new_rev: Dict[str, Any], file_path: Path) -> bool:
 
 def render_community_reviews(active_app_name: str = "Materials Characterization Hub"):
     """
-    Renders an interactive, peer-review & wishlist section on the Master Gateway.
-    Allows real users to read authentic community ratings, submit new reviews, and express wishes.
+    Renders an institutional peer-review & feature request registry on the Master Gateway.
+    Allows users to read authentic community feedback and submit feature requests.
     """
     file_path = get_reviews_file_path()
     st.session_state["community_reviews_cache"] = load_reviews(file_path)
@@ -74,16 +73,16 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
     header_placeholder = st.container()
 
     tab_read, tab_submit = st.tabs([
-        "⭐ Read User Reviews & Wishes",
-        "✍️ Submit a Review, Suggestion or Feature Wish"
+        "Published Reviews & Feature Requests",
+        "Submit Review or Feature Request"
     ])
 
     # --------------------------------------------------------------------------
-    # TAB 2: SUBMIT A NEW REVIEW OR WISH (Executed first so submissions update Tab 1 & Header immediately)
+    # TAB 2: SUBMIT A NEW REVIEW OR WISH
     # --------------------------------------------------------------------------
     with tab_submit:
-        st.markdown("##### ✍️ Share Your Real Review, Suggestion, Rating or Feature Wish")
-        st.caption("Your feedback is saved immediately to the platform databank and can be forwarded directly to Dr. Deler Langenberg.")
+        st.markdown("##### Submit Technical Review, Benchmark Request, or Feature Proposal")
+        st.caption("Submissions are recorded directly in the platform review registry.")
 
         with st.form(f"community_review_form_{active_app_name}", clear_on_submit=True):
             c1, c2 = st.columns(2)
@@ -109,11 +108,11 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
                     ]
                 )
                 f_domain = st.selectbox(
-                    "Target Domain / Studio:",
+                    "Target Domain / Module:",
                     [
                         "Entire Characterization Hub (General)",
                         "UV-Vis & Photokinetics Studio",
-                        "XPS Deep-Intelligence Studio",
+                        "XPS Core-Level Studio",
                         "XRD Crystallography Studio",
                         "FTIR Spectroscopy Studio",
                         "SEM-EDX Microstructural Studio"
@@ -122,10 +121,10 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
 
             with c2:
                 f_rating = st.select_slider(
-                    "Your Rating:",
+                    "Rating:",
                     options=[1, 2, 3, 4, 5],
                     value=5,
-                    format_func=lambda x: f"{x} Stars (" + "★" * x + ")"
+                    format_func=lambda x: f"{x} / 5 (" + "★" * x + ")"
                 )
                 f_cat = st.selectbox(
                     "Feedback Category:",
@@ -138,29 +137,29 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
                 )
                 f_subj = st.text_input(
                     "Subject / Headline:",
-                    placeholder="e.g. Deconvolution experience, requested technique..."
+                    placeholder="e.g. Deconvolution workflow, requested standard..."
                 )
 
             f_comment = st.text_area(
-                "Your Review / Thoughts on this Platform: *",
-                placeholder="How did this tool assist your characterization, thesis, or paper? What worked well?",
-                height=110
+                "Review / Technical Feedback: *",
+                placeholder="Describe how this module assisted your characterization workflow or analysis.",
+                height=100
             )
             f_wishes = st.text_area(
-                "Your Wishes & Feature Suggestions for Future Updates:",
-                placeholder="What materials, techniques, or spectroscopic models would you like Dr. Deler Langenberg to add next?",
+                "Feature Requests & Benchmark Proposals:",
+                placeholder="Specify reference materials, characterization protocols, or peak models to prioritize in upcoming releases.",
                 height=75
             )
 
             submit_btn = st.form_submit_button(
-                "🚀 Publish Review & Submit Wishes",
+                "Submit Review & Feature Proposal",
                 type="primary",
                 use_container_width=True
             )
 
             if submit_btn:
                 if not f_name.strip() or not f_comment.strip():
-                    st.warning("⚠️ Please provide at least your **Name** and **Review / Thoughts** before submitting.")
+                    st.warning("Please provide both your Name and Review / Technical Feedback before submitting.")
                 else:
                     inst_code = (
                         "KAUST" if "KAUST" in f_inst else
@@ -183,11 +182,10 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
                     }
                     if add_review(new_item, file_path):
                         st.session_state["last_submitted_review"] = new_item
-                        st.success("🎉 Thank you! Your review has been published live to the Community Reviews board.")
+                        st.success("Thank you. Your submission has been published to the Community Feedback registry.")
                     else:
                         st.error("Failed to save review to disk. Please try again.")
 
-        # If a review was just submitted in this session, show direct communication links
         if "last_submitted_review" in st.session_state:
             last_rev = st.session_state["last_submitted_review"]
             mail_subj = urllib.parse.quote(f"[{active_app_name} Review] from {last_rev['name']} ({last_rev['institution']})")
@@ -217,19 +215,19 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
             gh_url = f"https://github.com/delerla/Plotting_Chemistry/issues/new?title={gh_title}&body={gh_body}"
 
             st.markdown(f"""
-            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px 16px; margin-top: 10px;">
-                <div style="font-size: 0.86rem; font-weight: 700; color: #0369a1; margin-bottom: 6px;">
-                    📬 Direct Author Notification Options (Optional)
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px 16px; margin-top: 10px;">
+                <div style="font-size: 0.84rem; font-weight: 600; color: #0f172a; margin-bottom: 4px;">
+                    External Notification Channels (Optional)
                 </div>
-                <div style="font-size: 0.81rem; color: #334155; margin-bottom: 10px;">
-                    Your review is already live in the <strong>"⭐ Read User Reviews & Wishes"</strong> tab. You can also send a direct copy to Dr. Deler Langenberg's inbox or open a GitHub discussion ticket:
+                <div style="font-size: 0.80rem; color: #475569; margin-bottom: 10px;">
+                    Your entry is recorded in the <strong>Published Reviews &amp; Feature Requests</strong> tab. You may also forward a copy via email or open a GitHub issue ticket:
                 </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <a href="{mailto_url}" style="background: #0284c7; color: white; padding: 7px 14px; border-radius: 5px; text-decoration: none; font-size: 0.83rem; font-weight: 600;">
-                        ✉️ Email Copy Directly to Dr. Deler Langenberg
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <a href="{mailto_url}" style="background: #0284c7; color: white !important; padding: 6px 12px; border-radius: 4px; text-decoration: none !important; font-size: 0.78rem; font-weight: 600;">
+                        Forward Copy via Email
                     </a>
-                    <a href="{gh_url}" target="_blank" style="background: #1e293b; color: white; padding: 7px 14px; border-radius: 5px; text-decoration: none; font-size: 0.83rem; font-weight: 600;">
-                        🌟 Open GitHub Feature Wish Ticket
+                    <a href="{gh_url}" target="_blank" style="background: #0f172a; color: white !important; padding: 6px 12px; border-radius: 4px; text-decoration: none !important; font-size: 0.78rem; font-weight: 600;">
+                        Open GitHub Feature Ticket
                     </a>
                 </div>
             </div>
@@ -242,30 +240,30 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
     has_reviews = len(reviews) > 0
     if has_reviews:
         avg_r = sum(int(r.get("rating", 5)) for r in reviews) / len(reviews)
-        rating_display = f"★ {avg_r:.1f}"
-        rating_sub = f"{len(reviews)} Community Review{'s' if len(reviews) > 1 else ''}"
+        rating_display = f"★ {avg_r:.1f} / 5.0"
+        rating_sub = f"{len(reviews)} Verified Submission{'s' if len(reviews) > 1 else ''}"
     else:
-        rating_display = "★ New"
-        rating_sub = "Ready for First Review"
+        rating_display = "Open Registry"
+        rating_sub = "No submissions recorded yet"
 
     with header_placeholder:
         st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #0b1f3a 0%, #173b6c 100%); color: white; padding: 1.25rem 1.5rem; border-radius: 8px; border-left: 6px solid #38bdf8; margin-bottom: 1.2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0f172a; padding: 1rem 1.25rem; border-radius: 6px; margin-bottom: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div>
-                    <div style="font-size: 0.74rem; letter-spacing: 0.10em; text-transform: uppercase; color: #93c5fd; font-weight: 700;">
-                        Peer Review, User Voices & Scientific Community
+                    <div style="font-size: 0.70rem; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; font-weight: 700;">
+                        USER FEEDBACK &amp; FEATURE REGISTRY
                     </div>
-                    <h3 style="margin: 3px 0 5px 0; font-size: 1.5rem; font-weight: 800; color: #ffffff;">
-                        💬 Community Reviews, Suggestions & Feature Wishlist
-                    </h3>
-                    <div style="font-size: 0.88rem; color: #cbd5e1; max-width: 820px; line-height: 1.4;">
-                        Centralized peer-review board for the Materials Characterization Hub and all 5 dedicated studios (FTIR, XRD, XPS, UV-Vis, SEM-EDX). Share your experience, suggestions, and wishes directly with Dr. Deler Langenberg.
+                    <div style="margin: 2px 0 4px 0; font-size: 1.25rem; font-weight: 700; color: #0f172a;">
+                        Community Reviews &amp; Methodological Wishlist
+                    </div>
+                    <div style="font-size: 0.84rem; color: #475569; max-width: 820px; line-height: 1.4;">
+                        Centralized feedback registry for the Materials Characterization Hub and all 5 analytical studios (FTIR, XRD, XPS, UV-Vis, SEM-EDX). Submit technical evaluations, reference dataset requests, and methodological suggestions.
                     </div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 1.85rem; font-weight: 800; color: #facc15; line-height: 1;">{rating_display}</div>
-                    <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 3px;">{rating_sub}</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{rating_display}</div>
+                    <div style="font-size: 0.74rem; color: #64748b; margin-top: 2px;">{rating_sub}</div>
                 </div>
             </div>
         </div>
@@ -277,15 +275,15 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
     with tab_read:
         if not has_reviews:
             st.info(
-                "🌟 **No community reviews submitted yet.** "
-                "Switch to the **'✍️ Submit a Review, Suggestion or Feature Wish'** tab above to post the first review!"
+                "No community reviews have been submitted yet. "
+                "Select the 'Submit Review or Feature Request' tab above to contribute feedback or request new reference benchmarks."
             )
         else:
             c_stat1, c_stat2, c_stat3 = st.columns([1, 1, 1.5])
             with c_stat1:
-                st.metric("Total Published Reviews", len(reviews))
+                st.metric("Published Entries", len(reviews))
             with c_stat2:
-                st.metric("Mean Community Rating", f"{avg_r:.2f} / 5.0")
+                st.metric("Mean Rating", f"{avg_r:.2f} / 5.0")
             with c_stat3:
                 categories = [
                     "All Categories",
@@ -300,40 +298,38 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
             if sel_cat != "All Categories":
                 filtered_reviews = [r for r in reviews if r.get("category") == sel_cat]
 
-            st.caption(f"Displaying {len(filtered_reviews)} published community feedback entries:")
+            st.caption(f"Showing {len(filtered_reviews)} community feedback entries:")
 
             for r in filtered_reviews:
                 stars = "★" * int(r.get("rating", 5)) + "☆" * (5 - int(r.get("rating", 5)))
                 inst = r.get("institution", "Academic Institution")
                 dom_badge = r.get("domain", "Characterization Hub")
                 cat_badge = r.get("category", "Academic Review")
-                inst_bg = "#e0e7ff" if "KAUST" in inst else ("#dcfce7" if "KFUPM" in inst else ("#e0f2fe" if "KACST" in inst else ("#fef3c7" if "IAU" in inst else "#f1f5f9")))
-                inst_txt = "#3730a3" if "KAUST" in inst else ("#166534" if "KFUPM" in inst else ("#0369a1" if "KACST" in inst else ("#92400e" if "IAU" in inst else "#334155")))
 
                 st.markdown(f"""
-                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.9rem 1.15rem; margin-bottom: 0.75rem;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; margin-bottom: 6px; gap: 6px;">
                         <div>
-                            <span style="font-weight: 700; font-size: 1.02rem; color: #0f2b48;">{r.get('name', 'Anonymous Researcher')}</span>
-                            <span style="font-size: 0.82rem; color: #64748b;"> • {r.get('role', 'Scientist')}</span>
-                            <span style="background: {inst_bg}; color: {inst_txt}; font-size: 0.73rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-left: 6px;">
-                                🏛️ {inst}
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">{r.get('name', 'Researcher')}</span>
+                            <span style="font-size: 0.80rem; color: #64748b;"> • {r.get('role', 'Scientist')}</span>
+                            <span style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-size: 0.71rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; margin-left: 6px;">
+                                {inst}
                             </span>
-                            <span style="background: #f1f5f9; color: #475569; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-left: 4px;">
-                                🔬 {dom_badge}
+                            <span style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; font-size: 0.71rem; font-weight: 500; padding: 2px 7px; border-radius: 4px; margin-left: 4px;">
+                                {dom_badge}
                             </span>
                         </div>
                         <div>
-                            <span style="color: #f59e0b; font-size: 1.05rem; font-weight: 700;">{stars}</span>
-                            <span style="font-size: 0.75rem; color: #94a3b8; margin-left: 6px;">{r.get('date', '')}</span>
+                            <span style="color: #0f172a; font-size: 0.90rem; font-weight: 700;">{stars}</span>
+                            <span style="font-size: 0.73rem; color: #94a3b8; margin-left: 6px;">{r.get('date', '')}</span>
                         </div>
                     </div>
-                    <div style="font-weight: 700; font-size: 0.93rem; color: #1e3a8a; margin-bottom: 4px;">
+                    <div style="font-weight: 600; font-size: 0.88rem; color: #0284c7; margin-bottom: 4px;">
                         [{cat_badge}] {r.get('subject', 'Platform Feedback')}
                     </div>
-                    <div style="font-size: 0.88rem; color: #334155; line-height: 1.5; margin-bottom: 8px;">
-                        "{r.get('comment', '')}"
+                    <div style="font-size: 0.85rem; color: #334155; line-height: 1.5; margin-bottom: 6px;">
+                        {r.get('comment', '')}
                     </div>
-                    {f'<div style="background: #f8fafc; border-left: 3px solid #0284c7; padding: 6px 10px; border-radius: 4px; font-size: 0.83rem; color: #0369a1;"><strong>💡 Wish / Suggestion:</strong> {r.get("wishes")}</div>' if r.get('wishes') else ''}
+                    {f'<div style="background: #f8fafc; border-left: 3px solid #0284c7; padding: 6px 10px; border-radius: 4px; font-size: 0.80rem; color: #334155;"><strong>Feature Request:</strong> {r.get("wishes")}</div>' if r.get('wishes') else ''}
                 </div>
                 """, unsafe_allow_html=True)

@@ -89,43 +89,73 @@ except ImportError:
             def render_sidebar_counter(domain_key: str):
                 pass
             def render_studio_navigation_bar(active_domain_key: str):
-                st.markdown('<a href="https://delerla-plotting-chemistry-app-gu8u0i.streamlit.app/" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding: 5px 12px; background: #38bdf8; color: #0f172a !important; border-radius: 5px; text-decoration: none !important; font-weight: 700; font-size: 0.80rem;">🏠 ⟵ Master Characterization Hub</a>', unsafe_allow_html=True)
+                st.markdown('<a href="https://delerla-plotting-chemistry-app-gu8u0i.streamlit.app/" target="_blank" style="display:inline-flex; align-items:center; padding: 4px 11px; background: #ffffff; color: #0f172a !important; border: 1px solid #94a3b8; border-radius: 4px; text-decoration: none !important; font-weight: 600; font-size: 0.76rem;">← Master Hub</a>', unsafe_allow_html=True)
             def render_unified_studio_footer(active_domain_key: str, studio_title: str, studio_subtitle: str):
-                st.markdown(f'<div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.82rem;"><strong>{studio_title}</strong> • {studio_subtitle}<br/>Lead: Dr. Deler Langenberg (MIT License)</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.78rem;"><strong>{studio_title}</strong> — {studio_subtitle}<br/>© 2026 Dr. Deler Langenberg • MIT Open-Source License</div>', unsafe_allow_html=True)
 
 # Page Configuration
 st.set_page_config(
-    page_title="XPS Studio - Dr. Deler Langenberg",
+    page_title="XPS Core-Level Studio",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Lightweight System CSS (No blocking external font network requests)
+# Standardized Institutional Styling
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     html, body, [class*="css"] {
-        font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
-    .xps-header {
-        font-size: 1.85rem;
-        font-weight: 800;
-        color: #0f2b48;
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
+    .studio-masthead {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #0f172a;
+        border-radius: 6px;
+        padding: 1rem 1.35rem;
+        margin-bottom: 1.15rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .studio-eyebrow {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #0284c7;
+        margin-bottom: 2px;
+    }
+    .studio-title {
+        font-size: 1.45rem;
+        font-weight: 700;
+        color: #0f172a;
         letter-spacing: -0.02em;
-        margin-bottom: 0.15rem;
+        line-height: 1.2;
     }
-    .profile-card {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #f8fafc;
-        border-radius: 8px;
-        padding: 13px;
+    .studio-subtitle {
+        font-size: 0.84rem;
+        color: #475569;
+        margin-top: 3px;
+    }
+    .sidebar-brand {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 3px solid #0f172a;
+        border-radius: 5px;
+        padding: 10px 12px;
         margin-bottom: 1rem;
-        border: 1px solid #334155;
     }
     .insight-card {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
-        border-left: 5px solid #0284c7;
+        border-left: 4px solid #0284c7;
         padding: 11px 15px;
         border-radius: 6px;
         margin-top: 8px;
@@ -134,23 +164,25 @@ st.markdown("""
     .warning-box {
         background: #fffbeb;
         border: 1px solid #fef3c7;
-        border-left: 5px solid #f59e0b;
+        border-left: 4px solid #f59e0b;
         padding: 9px 13px;
         border-radius: 6px;
         color: #92400e;
         margin-top: 8px;
-        font-size: 0.89rem;
+        font-size: 0.88rem;
     }
     .badge {
         display: inline-block;
         padding: 3px 8px;
         border-radius: 4px;
-        font-size: 0.73rem;
+        font-size: 0.72rem;
         font-weight: 600;
+        letter-spacing: 0.02em;
+        margin-right: 4px;
     }
-    .badge-dark { background: #1e293b; color: #f8fafc; }
-    .badge-blue { background: #e0f2fe; color: #0284c7; }
-    .badge-green { background: #dcfce7; color: #16a34a; }
+    .badge-dark { background: #0f172a; color: #f8fafc; }
+    .badge-blue { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-green { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -177,24 +209,20 @@ def _cached_benchmark_df(preset_name: str):
 
 
 # ==============================================================================
-# SIDEBAR: DOMAIN SELECTION & BRANDING
+# SIDEBAR: DOMAIN SELECTION & CONFIGURATION
 # ==============================================================================
 with st.sidebar:
     st.markdown("""
-    <div class="profile-card">
-        <div style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-weight: 700;">Platform Owner & Lead</div>
-        <div style="font-size: 1.2rem; font-weight: 800; color: #38bdf8;">Dr. Deler Langenberg</div>
-        <div style="font-size: 0.79rem; color: #cbd5e1; margin-top: 3px;">
-            XPS Intelligence Engine & Computational Spectroscopy
-        </div>
-        <div style="display: flex; gap: 6px; margin-top: 9px;">
-            <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="text-decoration: none; background: #334155; color: #f8fafc; padding: 4px 10px; border-radius: 4px; font-size: 0.73rem; font-weight: 600;">⭐ GitHub</a>
-            <a href="mailto:delerla@yahoo.de" style="text-decoration: none; background: #0284c7; color: #ffffff; padding: 4px 10px; border-radius: 4px; font-size: 0.73rem; font-weight: 600;">✉️ Email</a>
+    <div class="sidebar-brand">
+        <div style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: #0284c7; font-weight: 700;">Characterization Module</div>
+        <div style="font-size: 1.02rem; font-weight: 700; color: #0f172a; margin-top: 2px;">XPS Core-Level Studio</div>
+        <div style="font-size: 0.76rem; color: #64748b; margin-top: 3px; line-height: 1.35;">
+            Shirley Background, Voigt Deconvolution &amp; Charge Referencing
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 1. Material Domain & Preset")
+    st.markdown("##### 1. Material Domain & Preset")
     selected_domain = st.selectbox(
         "Field of Study:",
         list(ALL_DOMAINS.keys()),
@@ -207,8 +235,8 @@ with st.sidebar:
     selected_preset_name = st.selectbox("Spectral Chemistry Preset:", preset_names)
     active_preset = domain_presets[selected_preset_name]
 
-    with st.expander("🇸🇦 Saudi Alliance Databank (KFUPM, KACST, KAUST, IAU)", expanded=False):
-        sq = st.text_input("🔍 Filter Materials / Literature:", placeholder="UiO-66, Perovskite, TiO2, MXene...", key="xps_saudi_sq")
+    with st.expander("Saudi Alliance Reference Databank", expanded=False):
+        sq = st.text_input("Filter Materials / Literature:", placeholder="UiO-66, Perovskite, TiO2, MXene...", key="xps_saudi_sq")
         inst_choice = st.selectbox(
             "Institution Focus:",
             ["All Saudi Alliance Partners", "KAUST", "KFUPM", "KACST", "IAU (iau.edu.sa)"],
@@ -223,8 +251,8 @@ with st.sidebar:
             active_saudi_bm = bms[sel_idx]
             st.markdown(f"**Pillar:** *{active_saudi_bm['pillar']}*")
             st.markdown(f"**Partners:** {', '.join(active_saudi_bm['institutions'])}")
-            st.caption(f"**Key Citation:** {active_saudi_bm['primary_citation']}")
-            with st.expander("📖 Expected XPS Core Levels", expanded=False):
+            st.caption(f"**Citation:** {active_saudi_bm['primary_citation']}")
+            with st.expander("Expected XPS Core Levels", expanded=False):
                 if "xps_benchmarks" in active_saudi_bm:
                     for k, v in active_saudi_bm["xps_benchmarks"].get("binding_energies", {}).items():
                         st.markdown(f"- **{k}**: `{v:.1f} eV`")
@@ -233,29 +261,12 @@ with st.sidebar:
             st.caption("No matching benchmarks found.")
 
     st.markdown("---")
-    st.markdown("### 2. Publication Typography & Style")
+    st.markdown("##### 2. Publication Typography & Style")
     selected_theme = st.selectbox(
         "Journal Color Palette:",
         list(PUBLICATION_PALETTES.keys()),
         index=2
     )
-
-    st.markdown("---")
-    with st.expander("📖 Citation & Attribution", expanded=False):
-        st.markdown("""
-        ```bibtex
-        @software{langenberg_xps_studio_2026,
-          author    = {Dr. Deler Langenberg},
-          title     = {XPS Studio: Materials-Specific Spectroscopic Intelligence Hub},
-          year      = {2026},
-          publisher = {GitHub},
-          url       = {https://github.com/delerla/Plotting_Chemistry}
-        }
-        ```
-        **Lead Author:** Dr. Deler Langenberg  
-        **Contact:** [delerla@yahoo.de](mailto:delerla@yahoo.de)  
-        **License:** MIT Open-Source
-        """)
 
     # Real-Time Domain Visitor Counter
     render_sidebar_counter("xps_studio")
@@ -265,18 +276,17 @@ with st.sidebar:
 # ==============================================================================
 render_studio_navigation_bar("xps_studio")
 
-st.markdown("""
-<div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.65rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
+st.markdown(f"""
+<div class="studio-masthead">
     <div>
-        <div class="xps-header">⚡ XPS Studio: High-Resolution Core-Level Intelligence</div>
-        <div style="font-size: 0.88rem; color: #475569;">
-            Lightweight, Apply-driven multi-peak deconvolution, editable typography & automated chemical reasoning.
-        </div>
+        <div class="studio-eyebrow">X-RAY PHOTOELECTRON SPECTROSCOPY</div>
+        <div class="studio-title">XPS Core-Level Studio</div>
+        <div class="studio-subtitle">Constrained Voigt deconvolution, iterative Shirley background subtraction, and chemical state quantification.</div>
     </div>
-    <div style="display: flex; gap: 4px; align-items: center;">
-        <span class="badge badge-dark">Lead: Dr. Deler Langenberg</span>
-        <span class="badge badge-blue">Fast Lightweight Mode</span>
-        <span class="badge badge-green">MIT License</span>
+    <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
+        <span class="badge badge-dark">{selected_domain}</span>
+        <span class="badge badge-blue">{active_preset['core_level']}</span>
+        <span class="badge badge-green">OriginLab &amp; LabPlot Ready</span>
     </div>
 </div>
 """, unsafe_allow_html=True)

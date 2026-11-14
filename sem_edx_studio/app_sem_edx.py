@@ -69,53 +69,82 @@ except ImportError:
             def render_sidebar_counter(domain_key: str):
                 pass
             def render_studio_navigation_bar(active_domain_key: str):
-                st.markdown('<a href="https://delerla-plotting-chemistry-app-gu8u0i.streamlit.app/" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding: 5px 12px; background: #38bdf8; color: #0f172a !important; border-radius: 5px; text-decoration: none !important; font-weight: 700; font-size: 0.80rem;">🏠 ⟵ Master Characterization Hub</a>', unsafe_allow_html=True)
+                st.markdown('<a href="https://delerla-plotting-chemistry-app-gu8u0i.streamlit.app/" target="_blank" style="display:inline-flex; align-items:center; padding: 4px 11px; background: #ffffff; color: #0f172a !important; border: 1px solid #94a3b8; border-radius: 4px; text-decoration: none !important; font-weight: 600; font-size: 0.76rem;">← Master Hub</a>', unsafe_allow_html=True)
             def render_unified_studio_footer(active_domain_key: str, studio_title: str, studio_subtitle: str):
-                st.markdown(f'<div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.82rem;"><strong>{studio_title}</strong> • {studio_subtitle}<br/>Lead: Dr. Deler Langenberg (MIT License)</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.78rem;"><strong>{studio_title}</strong> — {studio_subtitle}<br/>© 2026 Dr. Deler Langenberg • MIT Open-Source License</div>', unsafe_allow_html=True)
 
 # Page Configuration
 st.set_page_config(
-    page_title="SEM-EDX Studio - Dr. Deler Langenberg",
+    page_title="SEM-EDX Microstructural Studio",
     page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling
+# Standardized Institutional Styling
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
-    .sem-header {
-        font-size: 1.85rem;
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
+    .studio-masthead {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #0f172a;
+        border-radius: 6px;
+        padding: 1rem 1.35rem;
+        margin-bottom: 1.15rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .studio-eyebrow {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #0284c7;
+        margin-bottom: 2px;
+    }
+    .studio-title {
+        font-size: 1.45rem;
         font-weight: 700;
         color: #0f172a;
-        margin-bottom: 0.2rem;
         letter-spacing: -0.02em;
+        line-height: 1.2;
     }
-    .profile-card {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #f8fafc;
-        border-radius: 8px;
-        padding: 14px;
-        margin-bottom: 1.2rem;
-        border: 1px solid #334155;
+    .studio-subtitle {
+        font-size: 0.84rem;
+        color: #475569;
+        margin-top: 3px;
+    }
+    .sidebar-brand {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 3px solid #0f172a;
+        border-radius: 5px;
+        padding: 10px 12px;
+        margin-bottom: 1rem;
     }
     .badge {
         display: inline-block;
         padding: 3px 8px;
         border-radius: 4px;
-        font-size: 0.73rem;
+        font-size: 0.72rem;
         font-weight: 600;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.02em;
         margin-right: 4px;
     }
-    .badge-dark { background: #334155; color: #f8fafc; }
-    .badge-blue { background: #e0f2fe; color: #0284c7; }
-    .badge-green { background: #dcfce7; color: #15803d; }
-    .badge-amber { background: #fef3c7; color: #b45309; }
+    .badge-dark { background: #0f172a; color: #f8fafc; }
+    .badge-blue { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-green { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -125,62 +154,64 @@ st.markdown("""
 # ==============================================================================
 with st.sidebar:
     st.markdown("""
-    <div class="profile-card">
-        <div style="display: flex; align-items: center; gap: 9px;">
-            <div style="font-size: 1.5rem;">🔬</div>
-            <div>
-                <div style="font-size: 0.70rem; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-weight: 700;">Dedicated Studio</div>
-                <div style="font-size: 1.18rem; font-weight: 800; color: #38bdf8; line-height: 1.2;">Dr. Deler Langenberg</div>
-            </div>
-        </div>
-        <div style="font-size: 0.80rem; color: #cbd5e1; margin-top: 8px; line-height: 1.35;">
-            SEM Electron Microscopy & EDX Elemental Microanalysis Suite
-        </div>
-        <div style="display: flex; gap: 6px; margin-top: 10px;">
-            <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="text-decoration: none; background: #334155; color: #f8fafc; padding: 4px 10px; border-radius: 4px; font-size: 0.74rem; font-weight: 600;">
-                ⭐ GitHub
-            </a>
-            <a href="mailto:delerla@yahoo.de" style="text-decoration: none; background: #0284c7; color: #ffffff; padding: 4px 10px; border-radius: 4px; font-size: 0.74rem; font-weight: 600;">
-                ✉️ Email
-            </a>
+    <div class="sidebar-brand">
+        <div style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: #0284c7; font-weight: 700;">Characterization Module</div>
+        <div style="font-size: 1.02rem; font-weight: 700; color: #0f172a; margin-top: 2px;">SEM-EDX Microstructural Studio</div>
+        <div style="font-size: 0.76rem; color: #64748b; margin-top: 3px; line-height: 1.35;">
+            Watershed Particle Segmentation, Size Distributions &amp; EDX Stoichiometry
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 1. Material Domain & Preset")
+    st.markdown("##### 1. Material Domain & Reference")
     domain_names = list(SEM_EDX_DOMAINS.keys())
-    selected_domain = st.selectbox("Scientific Benchmark / Domain:", domain_names, index=0)
+    selected_domain = st.selectbox("Reference Benchmark / Domain:", domain_names, index=0)
     domain_meta = SEM_EDX_DOMAINS[selected_domain]
 
     st.markdown(f"""
-    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 1rem; font-size: 0.83rem; line-height: 1.4;">
-        <strong>Target Class:</strong> {domain_meta['material_class']}<br/>
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 5px; padding: 9px 11px; margin-bottom: 0.85rem; font-size: 0.80rem; color: #334155; line-height: 1.45;">
+        <strong>Class:</strong> {domain_meta['material_class']}<br/>
         <strong>Morphology:</strong> {domain_meta['morphology']}<br/>
-        <strong>Audited Reference:</strong> {domain_meta['reference']}
+        <strong>Standard:</strong> {domain_meta['reference']}
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 2. Analysis Workflow")
+    with st.expander("Saudi Alliance Reference Databank", expanded=False):
+        sq = st.text_input("Filter Materials / Literature:", placeholder="UiO-66, Perovskite, PAN, TiO2...", key="sem_saudi_sq")
+        inst_choice = st.selectbox(
+            "Institution Focus:",
+            ["All Saudi Alliance Partners", "KAUST", "KFUPM", "KACST", "IAU (iau.edu.sa)"],
+            key="sem_saudi_inst"
+        )
+        sub_code = inst_choice.split()[0] if "All" not in inst_choice else ""
+        try:
+            from knowledge_base.saudi_research_databank import search_saudi_databank
+            bms = search_saudi_databank(query=sq, institution=sub_code)
+            if bms:
+                bm_titles = [f"{b['material_name']} ({'/'.join(b['institutions'])})" for b in bms]
+                sel_idx = st.selectbox("Institutional References:", range(len(bm_titles)), format_func=lambda i: bm_titles[i], key="sem_saudi_bm_select")
+                active_saudi_bm = bms[sel_idx]
+                st.markdown(f"**Pillar:** *{active_saudi_bm['pillar']}*")
+                st.markdown(f"**Partners:** {', '.join(active_saudi_bm['institutions'])}")
+                st.caption(f"**Citation:** {active_saudi_bm['primary_citation']}")
+            else:
+                st.caption("No matching benchmarks found.")
+        except Exception:
+            st.caption("Reference databank available on Master Hub.")
+
+    st.markdown("##### 2. Analytical Workflow")
     analysis_mode = st.radio(
-        "Select Analytical Engine:",
+        "Select Analytical Protocol:",
         ["1. SEM Micrograph Segmentation & Sizing", "2. Particle Size Statistical Distribution", "3. EDX Elemental Microanalysis & Stoichiometry"],
         index=0
     )
 
     st.markdown("---")
-    st.markdown("### 3. Publication Typography & Style")
+    st.markdown("##### 3. Publication Typography & Style")
     selected_theme = st.selectbox("Journal Color Palette:", list(PUBLICATION_PALETTES.keys()), index=2)
     selected_font_size = st.slider("Typography Font Size (pt):", min_value=9, max_value=18, value=12)
     fig_width = st.slider("Figure Width (in):", min_value=8.0, max_value=16.0, value=12.0, step=0.5)
     fig_height = st.slider("Figure Height (in):", min_value=4.0, max_value=8.0, value=5.5, step=0.5)
-
-    st.markdown("---")
-    with st.expander("📖 Citation & Attribution", expanded=False):
-        st.markdown("""
-        **Lead Author:** Dr. Deler Langenberg  
-        **Contact:** [delerla@yahoo.de](mailto:delerla@yahoo.de)  
-        **Repository:** [Plotting_Chemistry](https://github.com/delerla/Plotting_Chemistry)
-        """)
 
     # Real-Time Domain Visitor Counter
     render_sidebar_counter("sem_edx_studio")
@@ -191,12 +222,18 @@ with st.sidebar:
 # ==============================================================================
 render_studio_navigation_bar("sem_edx_studio")
 
-st.markdown('<div class="sem-header">🔬 SEM-EDX Studio: Microstructural & Elemental Intelligence</div>', unsafe_allow_html=True)
 st.markdown(f"""
-<div style="margin-bottom: 1.0rem;">
-    <span class="badge badge-dark">{selected_domain}</span>
-    <span class="badge badge-blue">{domain_meta['material_class']}</span>
-    <span class="badge badge-green">Zero-Barrier Export • OriginLab Ready</span>
+<div class="studio-masthead">
+    <div>
+        <div class="studio-eyebrow">ELECTRON MICROSCOPY &amp; ELEMENTAL MICROANALYSIS</div>
+        <div class="studio-title">SEM-EDX Microstructural Studio</div>
+        <div class="studio-subtitle">Distance-watershed particle segmentation, Log-Normal/Weibull statistical sizing, and EDX stoichiometric quantification.</div>
+    </div>
+    <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
+        <span class="badge badge-dark">{selected_domain}</span>
+        <span class="badge badge-blue">{domain_meta['material_class']}</span>
+        <span class="badge badge-green">OriginLab &amp; LabPlot Ready</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
