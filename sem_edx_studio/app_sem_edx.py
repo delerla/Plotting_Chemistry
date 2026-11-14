@@ -153,6 +153,10 @@ with st.sidebar:
         **Repository:** [Plotting_Chemistry](https://github.com/delerla/Plotting_Chemistry)
         """)
 
+    # Real-Time Domain Visitor Counter
+    from modules.counter_module import render_sidebar_counter, render_footer_counter
+    render_sidebar_counter("sem_edx_studio")
+
 
 # ==============================================================================
 # MAIN WORKSPACE HEADER & RETURN LINK
@@ -454,3 +458,25 @@ Stoichiometry: {stoich}
             mime="application/zip",
             use_container_width=True
         )
+
+# ==============================================================================
+# COMMUNITY REVIEWS, USER WISHES & PEER FEEDBACK
+# ==============================================================================
+from modules.feedback_module import render_community_reviews
+render_community_reviews(active_app_name="SEM-EDX Studio")
+
+# ==============================================================================
+# INSTITUTIONAL FOOTER
+# ==============================================================================
+st.markdown("""
+<div style="margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.83rem; line-height: 1.6;">
+    <strong>SEM-EDX Studio</strong> • Microstructural Watershed Segmentation, Sizing Statistics & EDX Stoichiometry<br>
+    Engineered & Maintained by <strong>Dr. Deler Langenberg</strong> • 
+    <a href="https://github.com/delerla/Plotting_Chemistry" target="_blank" style="color: #0284c7; text-decoration: none; font-weight: 600;">GitHub Repository</a> • 
+    <a href="mailto:delerla@yahoo.de" style="color: #0284c7; text-decoration: none; font-weight: 600;">Contact: delerla@yahoo.de</a><br>
+    <small style="color: #94a3b8;">© 2026 Dr. Deler Langenberg (MIT License).</small>
+</div>
+""", unsafe_allow_html=True)
+c_f1, c_f2 = st.columns([3, 1])
+with c_f2:
+    render_footer_counter("sem_edx_studio")

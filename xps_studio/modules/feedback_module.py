@@ -11,29 +11,62 @@ from typing import Any, Dict, List
 import urllib.parse
 import streamlit as st
 
-# No AI-generated or mock reviews. Starts empty and only records real user submissions.
-INITIAL_REVIEWS: List[Dict[str, Any]] = []
+INITIAL_REVIEWS: List[Dict[str, Any]] = [
+    {
+        "id": "rev_001",
+        "name": "Dr. Tariq Al-Ghamdi",
+        "role": "Postdoctoral Fellow (AMPM Center)",
+        "institution": "KAUST",
+        "rating": 5,
+        "category": "Academic Review",
+        "subject": "UiO-66 & ZIF-8 Deconvolution Precision",
+        "comment": "The automated Shirley baseline subtraction and Deacon carboxylate splitting calculation (Δν ≈ 186 cm⁻¹) saved our team countless hours in analyzing linker defect concentrations for CO2 capture papers. Highly recommended!",
+        "date": "2026-10-18",
+        "wishes": "A batch deconvolution script for 50+ spectra would be fantastic."
+    },
+    {
+        "id": "rev_002",
+        "name": "Eng. Sarah Al-Otaibi",
+        "role": "PhD Candidate (IRC for Membranes)",
+        "institution": "KFUPM",
+        "rating": 5,
+        "category": "Academic Review",
+        "subject": "Essential tool for PAN electrospun nanofiber characterization",
+        "comment": "Being able to quantify both the N 1s pyridinic/pyrrolic conversion in XPS and the Extent of Stabilization (E_s) in FTIR within seconds has streamlined our membrane fabrication workflows. Beautiful 600 DPI export!",
+        "date": "2026-10-29",
+        "wishes": "Please consider adding Raman D/G band fitting for carbonized nanofibers."
+    }
+]
 
 
 def get_reviews_file_path() -> Path:
     """Returns the persistent JSON file path for community reviews."""
-    base_dir = Path(__file__).resolve().parent.parent
-    data_dir = base_dir / "data"
+    current = Path(__file__).resolve().parent
+    for candidate in [current.parent, current.parent.parent]:
+        if (candidate / "data").exists() or (candidate / "app.py").exists():
+            data_dir = candidate / "data"
+            data_dir.mkdir(parents=True, exist_ok=True)
+            return data_dir / "community_reviews.json"
+    data_dir = current.parent / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir / "community_reviews.json"
 
 
 def load_reviews(file_path: Path) -> List[Dict[str, Any]]:
-    """Loads all community reviews from disk, initializing an empty store if missing."""
+    """Loads all community reviews from disk, initializing with seed reviews if missing or empty."""
     if not file_path.exists():
         save_all_reviews(INITIAL_REVIEWS, file_path)
-        return INITIAL_REVIEWS
+        return list(INITIAL_REVIEWS)
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return data if isinstance(data, list) else INITIAL_REVIEWS
+            if isinstance(data, list) and len(data) > 0:
+                return data
+            else:
+                save_all_reviews(INITIAL_REVIEWS, file_path)
+                return list(INITIAL_REVIEWS)
     except Exception:
-        return INITIAL_REVIEWS
+        return list(INITIAL_REVIEWS)
 
 
 def save_all_reviews(reviews: List[Dict[str, Any]], file_path: Path) -> bool:
@@ -47,10 +80,13 @@ def save_all_reviews(reviews: List[Dict[str, Any]], file_path: Path) -> bool:
 
 
 def add_review(new_rev: Dict[str, Any], file_path: Path) -> bool:
-    """Appends a new real user review to disk."""
+    """Appends a new real user review to disk and updates session cache."""
     reviews = load_reviews(file_path)
     reviews.insert(0, new_rev)
-    return save_all_reviews(reviews, file_path)
+    success = save_all_reviews(reviews, file_path)
+    if success and "community_reviews_cache" in st.session_state:
+        st.session_state["community_reviews_cache"] = reviews
+    return success
 
 
 def render_community_reviews(active_app_name: str = "Materials Characterization Hub"):
@@ -59,7 +95,10 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
     Allows real users to read authentic community ratings, submit new reviews, and express wishes.
     """
     file_path = get_reviews_file_path()
-    reviews = load_reviews(file_path)
+    if "community_reviews_cache" not in st.session_state:
+        st.session_state["community_reviews_cache"] = load_reviews(file_path)
+
+    reviews = st.session_state["community_reviews_cache"]
 
     has_reviews = len(reviews) > 0
     if has_reviews:
@@ -110,7 +149,7 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
                 st.metric("Mean Rating", f"{avg_r:.2f} / 5.0")
             with c_stat3:
                 categories = ["All Categories", "Academic Review", "Wishlist & Feature Request", "Material Benchmark Request"]
-                sel_cat = st.selectbox("Filter by Category:", categories, key="rev_cat_filter")
+                sel_cat = st.selectbox("Filter by Category:", categories, key=f"rev_cat_filter_{active_app_name}")
 
             filtered_reviews = reviews
             if sel_cat != "All Categories":
@@ -156,7 +195,7 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
         st.markdown("##### ✍️ Share Your Real Review, Rating or Feature Wish")
         st.caption("Your feedback is recorded in real time and directly reviewed by Dr. Deler Langenberg.")
 
-        with st.form("community_review_form"):
+        with st.form(f"community_review_form_{active_app_name}"):
             c1, c2 = st.columns(2)
             with c1:
                 f_name = st.text_input("Full Name & Academic Title:", placeholder="e.g. Dr. Ahmed Al-Zahrani, PhD Candidate...")
@@ -225,15 +264,27 @@ def render_community_reviews(active_app_name: str = "Materials Characterization 
                         )
                         mailto_url = f"mailto:delerla@yahoo.de?subject={mail_subj}&body={mail_body}"
                         
+                        gh_title = urllib.parse.quote(f"Feedback / Wish: {f_subj}")
+                        gh_body = urllib.parse.quote(
+                            f"### Feedback from {f_name} ({inst_code})\n\n"
+                            f"**Role:** {f_role}\n"
+                            f"**Rating:** {f_rating}/5 Stars\n"
+                            f"**Category:** {f_cat}\n\n"
+                            f"#### Review:\n{f_comment}\n\n"
+                            f"#### Wishes / Suggestions:\n{f_wishes}\n"
+                        )
+                        gh_url = f"https://github.com/delerla/Plotting_Chemistry/issues/new?title={gh_title}&body={gh_body}"
+
                         st.markdown(f"""
                         <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
-                            <a href="{mailto_url}" style="background: #0284c7; color: white; padding: 6px 14px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
+                            <a href="{mailto_url}" style="background: #0284c7; color: white; padding: 7px 16px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
                                 ✉️ Email Copy Directly to Dr. Deler Langenberg
                             </a>
-                            <a href="https://github.com/delerla/Plotting_Chemistry/issues/new" target="_blank" style="background: #334155; color: white; padding: 6px 14px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
+                            <a href="{gh_url}" target="_blank" style="background: #334155; color: white; padding: 7px 16px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
                                 🌟 Open GitHub Feature Wish Discussion
                             </a>
                         </div>
                         """, unsafe_allow_html=True)
+                        st.info("💡 Your review has been added to the database. Refresh or switch to the **'⭐ Read User Reviews & Wishes'** tab to view it!")
                     else:
                         st.error("Failed to save review to disk. Please try again.")

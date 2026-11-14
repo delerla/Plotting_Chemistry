@@ -24,6 +24,12 @@ from modules.export_utils import (
 )
 from modules.file_parser import load_smart_file
 from modules.saudi_search_ui import render_saudi_alliance_explorer, render_sidebar_saudi_quick_search
+from modules.feedback_module import render_community_reviews
+from modules.counter_module import (
+    render_sidebar_counter,
+    render_footer_counter,
+    render_cross_domain_traffic_panel
+)
 
 # Page configuration
 st.set_page_config(
@@ -227,6 +233,9 @@ with st.sidebar:
         ```
         """)
 
+    # Real-Time Visitor Traffic Counter Widget
+    render_sidebar_counter("master_hub")
+
 
 # ==============================================================================
 # MAIN PAGE: EXECUTIVE MASTER GATEWAY
@@ -375,6 +384,9 @@ with c_row1_2:
         </a>
     </div>
     """, unsafe_allow_html=True)
+
+# Cross-Domain Multi-Technique Traffic Analytics Panel
+render_cross_domain_traffic_panel()
 
 st.markdown("---")
 
@@ -529,5 +541,14 @@ Search benchmark literature standards, crystal structures, reaction kinetics, an
 
 render_saudi_alliance_explorer()
 
+# ==============================================================================
+# SECTION 4: USER REVIEWS, COMMUNITY FEEDBACK & WISHLIST
+# ==============================================================================
+render_community_reviews("Materials Characterization Master Hub")
+
 st.markdown("---")
-st.caption("Materials Characterization & Computational Spectroscopic Analytics Hub • Lead: Dr. Deler Langenberg • Open-Source MIT License")
+c_foot1, c_foot2 = st.columns([3, 1])
+with c_foot1:
+    st.caption("Materials Characterization & Computational Spectroscopic Analytics Hub • Lead: Dr. Deler Langenberg • Open-Source MIT License")
+with c_foot2:
+    render_footer_counter("master_hub")

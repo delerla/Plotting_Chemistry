@@ -439,6 +439,10 @@ with st.sidebar:
 
     selected_theme = st.selectbox("Publication Theme:", list(PUBLICATION_PALETTES.keys()), index=0, key="xrd_theme")
 
+    # Real-Time Domain Visitor Counter
+    from modules.counter_module import render_sidebar_counter, render_footer_counter
+    render_sidebar_counter("xrd_studio")
+
 
 # ==============================================================================
 # MAIN WORKSPACE HEADER
@@ -1010,3 +1014,6 @@ st.markdown("""
     <small style="color: #94a3b8;">© 2026 Dr. Deler Langenberg (MIT License).</small>
 </div>
 """, unsafe_allow_html=True)
+c_f1, c_f2 = st.columns([3, 1])
+with c_f2:
+    render_footer_counter("xrd_studio")
